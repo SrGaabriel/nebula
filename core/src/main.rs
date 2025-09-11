@@ -5,6 +5,7 @@ mod cableway;
 
 use std::sync::Arc;
 use dotenvy::dotenv;
+use sea_query::Iden;
 use tokio::sync::RwLock;
 use crate::app::{AppConfig, AppState, NebulaApp};
 
@@ -17,6 +18,8 @@ async fn main() {
     ));
 
     let cableway_client = cableway::connect(config).await;
+    cableway_client.publish("internal.status", "Testing!".into()).await.unwrap();
+    cableway_client.flush().await.unwrap();
 
     let app = NebulaApp {
         config,

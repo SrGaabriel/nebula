@@ -36,8 +36,8 @@ pub type SharedState = Arc<RwLock<AppState>>;
 
 #[derive(Clone, Copy, Debug)]
 pub struct AppConfig {
-    pub rest_address: SocketAddr,
-    pub cableway_address: SocketAddr
+    pub rest_addr: SocketAddr,
+    pub cableway_addr: SocketAddr
 }
 
 impl AppConfig {
@@ -49,8 +49,8 @@ impl AppConfig {
         let cableway_port: u16 = get_required_env("CABLEWAY_PORT");
 
         AppConfig {
-            rest_address: SocketAddr::new(rest_host, rest_port),
-            cableway_address: SocketAddr::new(cableway_host, cableway_port)
+            rest_addr: SocketAddr::new(rest_host, rest_port),
+            cableway_addr: SocketAddr::new(cableway_host, cableway_port)
         }
     }
 }

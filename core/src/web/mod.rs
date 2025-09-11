@@ -16,7 +16,7 @@ pub async fn serve(app: &NebulaApp) {
         .init();
 
     let router = routing::router(app.state.clone(), app.cableway.clone());
-    let listener = TcpListener::bind(app.config.rest_address)
+    let listener = TcpListener::bind(app.config.rest_addr)
         .await
         .expect("Failed to bind rest API address");
     tracing::info!("Serving on {}", listener.local_addr().unwrap());

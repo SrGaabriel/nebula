@@ -41,3 +41,4 @@ sea-orm = "2.0.0-rc.6"
 sea-query = "1.0.0-rc.12"
 
 async-nats = "0.42.0"
+bytes = "1.10.1"
