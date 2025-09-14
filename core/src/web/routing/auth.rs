@@ -6,6 +6,8 @@ use axum::response::{IntoResponse, Response};
 use jwt::VerifyWithKey;
 use crate::app::SharedState;
 use crate::web::routing::error::error;
+use crate::schema::users;
+use sea_orm::EntityTrait;
 
 pub async fn authorize(mut req: Request, next: Next) -> Response {
     let headers = req.headers().clone();
@@ -27,27 +29,26 @@ pub async fn authorize(mut req: Request, next: Next) -> Response {
 
     let extensions = req.extensions_mut();
     let user = {
-        let mut state = extensions.get_mut::<SharedState>().unwrap().read().await;
-        let claims: Result<BTreeMap<String, i64>, jwt::error::Error> = token.unwrap().verify_with_key(&state.jwt_key);
+        let state = extensions.get::<SharedState>().unwrap().read().await;
+        let claims: Result<BTreeMap<String, u64>, jwt::error::Error> = token.unwrap().verify_with_key(&state.jwt_key);
         if claims.is_err() {
             return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
         }
         let claims = claims.unwrap();
 
-        let user_id: Option<&i64> = claims.get("id");
+        let user_id: Option<&u64> = claims.get("id");
         if user_id.is_none() {
             return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
         }
 
-        // users
-        //     .filter(table_user_id.eq(*user_id.unwrap()))
-        //     .select(User::as_select())
-        //     .first::<User>(&mut state.database)
+        users::Entity::find_by_id(*user_id.unwrap())
+            .one(&state.db)
+            .await
     };
-    // if user.is_err() {
-    //     return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
-    // }
-    //
-    // extensions.insert(user.unwrap());
+    if user.is_err() {
+        return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
+    }
+    
+    extensions.insert(user.unwrap());
     next.run(req).await
 }

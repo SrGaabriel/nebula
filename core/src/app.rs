@@ -16,28 +16,37 @@ pub struct NebulaApp {
 
 #[derive(Debug)]
 pub struct AppState {
+    pub db: sea_orm::DatabaseConnection,
     pub jwt_key: Hmac<Sha256>
 }
 
 impl AppState {
-    pub fn from_env() -> Self {
+    pub fn new_filling_env_defaults(db: sea_orm::DatabaseConnection) -> Self {
+        AppState {
+            db,
+            jwt_key: Self::from_env_jwt_key()
+        }
+    }
+
+    pub fn from_env_jwt_key() -> Hmac<Sha256> {
         let jwt_key: String = get_required_env("JWT_KEY");
 
-        let key = Hmac::<Sha256>::new_from_slice(jwt_key.as_bytes())
-            .expect("Failed to create HMAC");
-
-        AppState {
-            jwt_key: key
-        }
+        Hmac::<Sha256>::new_from_slice(jwt_key.as_bytes())
+            .expect("Failed to create HMAC")
     }
 }
 
 pub type SharedState = Arc<RwLock<AppState>>;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct AppConfig {
     pub rest_addr: SocketAddr,
-    pub cableway_addr: SocketAddr
+    pub cableway_addr: SocketAddr,
+    pub db_name: String,
+    pub db_user: String,
+    pub db_password: String,
+    pub db_host: String,
+    pub db_port: u16,
 }
 
 impl AppConfig {
@@ -48,9 +57,20 @@ impl AppConfig {
         let cableway_host: IpAddr = get_required_env("CABLEWAY_HOST");
         let cableway_port: u16 = get_required_env("CABLEWAY_PORT");
 
+        let db_name: String = get_required_env("DB_NAME");
+        let db_user: String = get_required_env("DB_USER");
+        let db_password: String = get_required_env("DB_PASSWORD");
+        let db_host: String = get_required_env("DB_HOST");
+        let db_port: u16 = get_required_env("DB_PORT");
+
         AppConfig {
             rest_addr: SocketAddr::new(rest_host, rest_port),
-            cableway_addr: SocketAddr::new(cableway_host, cableway_port)
+            cableway_addr: SocketAddr::new(cableway_host, cableway_port),
+            db_name,
+            db_user,
+            db_password,
+            db_host,
+            db_port
         }
     }
 }
