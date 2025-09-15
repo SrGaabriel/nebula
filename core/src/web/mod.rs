@@ -6,7 +6,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use crate::app::NebulaApp;
 
-pub async fn serve(app: &NebulaApp) {
+pub async fn serve(app: NebulaApp) {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -15,10 +15,10 @@ pub async fn serve(app: &NebulaApp) {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let router = routing::router(app.state.clone(), app.cableway.clone());
     let listener = TcpListener::bind(app.config.rest_addr)
         .await
         .expect("Failed to bind rest API address");
+    let router = routing::router(app);
     tracing::info!("Serving on {}", listener.local_addr().unwrap());
     axum::serve(
         listener,

@@ -12,7 +12,3 @@ pub async fn connect(config: &AppConfig) -> sea_orm::DatabaseConnection {
         .await
         .expect("Failed to connect to the database")
 }
-
-pub async fn run_migrations() {
-
-}

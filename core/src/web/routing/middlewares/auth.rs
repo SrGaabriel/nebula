@@ -1,17 +1,21 @@
 use std::collections::BTreeMap;
-use axum::extract::Request;
+use axum::extract::{Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use jwt::VerifyWithKey;
-use crate::app::SharedState;
+use crate::app::{NebulaApp};
 use crate::web::routing::error::error;
 use crate::schema::users;
 use sea_orm::EntityTrait;
 
-pub async fn authorize(mut req: Request, next: Next) -> Response {
+pub async fn authorize(
+    State(app): State<NebulaApp>,
+    mut req: Request,
+    next: Next
+) -> Response {
     let headers = req.headers().clone();
-    let auth = headers.get("Authorization").or(headers.get("Sec-Websocket-Protocol"));
+    let auth = headers.get("Authorization");
     if auth.is_none() {
         return error::<String>(StatusCode::UNAUTHORIZED, "No authorization header provided").into_response();
     }
@@ -27,28 +31,35 @@ pub async fn authorize(mut req: Request, next: Next) -> Response {
         return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
     }
 
-    let extensions = req.extensions_mut();
     let user = {
-        let state = extensions.get::<SharedState>().unwrap().read().await;
-        let claims: Result<BTreeMap<String, u64>, jwt::error::Error> = token.unwrap().verify_with_key(&state.jwt_key);
+        let state = app.state.read().await;
+        let claims: Result<BTreeMap<String, String>, jwt::error::Error> = token.unwrap().verify_with_key(&state.jwt_key);
         if claims.is_err() {
             return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
         }
         let claims = claims.unwrap();
 
-        let user_id: Option<&u64> = claims.get("id");
-        if user_id.is_none() {
+        let user_id_str: Option<&String> = claims.get("user_id");
+        if user_id_str.is_none() {
             return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
         }
+        let user_id = user_id_str.unwrap().parse::<u64>();
+        if user_id.is_err() {
+            return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token claim").into_response();
+        }
 
-        users::Entity::find_by_id(*user_id.unwrap())
+        users::Entity::find_by_id(user_id.unwrap() as i64)
             .one(&state.db)
             .await
     };
     if user.is_err() {
         return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
     }
-    
-    extensions.insert(user.unwrap());
+    let user = user.unwrap();
+    if user.is_none() {
+        return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
+    }
+
+    req.extensions_mut().insert(user.unwrap());
     next.run(req).await
 }

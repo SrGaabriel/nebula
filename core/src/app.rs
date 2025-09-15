@@ -2,6 +2,8 @@ use std::fmt::Debug;
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 use std::sync::Arc;
+use argon2::password_hash::SaltString;
+use argon2::Argon2;
 use async_nats::Client;
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
@@ -17,14 +19,16 @@ pub struct NebulaApp {
 #[derive(Debug)]
 pub struct AppState {
     pub db: sea_orm::DatabaseConnection,
-    pub jwt_key: Hmac<Sha256>
+    pub jwt_key: Hmac<Sha256>,
+    pub argon: Argon2<'static>
 }
 
 impl AppState {
     pub fn new_filling_env_defaults(db: sea_orm::DatabaseConnection) -> Self {
         AppState {
             db,
-            jwt_key: Self::from_env_jwt_key()
+            jwt_key: Self::from_env_jwt_key(),
+            argon: Argon2::default()
         }
     }
 
@@ -47,6 +51,7 @@ pub struct AppConfig {
     pub db_password: String,
     pub db_host: String,
     pub db_port: u16,
+    pub argon_salt: SaltString
 }
 
 impl AppConfig {
@@ -63,6 +68,10 @@ impl AppConfig {
         let db_host: String = get_required_env("DB_HOST");
         let db_port: u16 = get_required_env("DB_PORT");
 
+        let argon_salt_str: String = get_required_env("ARGON_SALT");
+        let argon_salt = SaltString::from_b64(&argon_salt_str)
+            .expect("Failed to create Argon2 salt from environment variable");
+
         AppConfig {
             rest_addr: SocketAddr::new(rest_host, rest_port),
             cableway_addr: SocketAddr::new(cableway_host, cableway_port),
@@ -70,7 +79,8 @@ impl AppConfig {
             db_user,
             db_password,
             db_host,
-            db_port
+            db_port,
+            argon_salt
         }
     }
 }

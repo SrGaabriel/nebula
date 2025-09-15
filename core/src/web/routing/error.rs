@@ -25,3 +25,12 @@ pub fn error<T: Serialize>(status: StatusCode, message: &str) -> NebulaResponse<
         message: String::from(message)
     })))
 }
+
+impl From<StatusCode> for NebulaError {
+    fn from(status: StatusCode) -> Self {
+        NebulaError {
+            status: status.as_u16(),
+            message: status.canonical_reason().unwrap_or("Unknown error").to_string()
+        }
+    }
+}

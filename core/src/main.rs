@@ -3,6 +3,7 @@ mod app;
 mod schema;
 mod cableway;
 mod database;
+mod service;
 
 use std::sync::Arc;
 use dotenvy::dotenv;
@@ -29,6 +30,6 @@ async fn main() {
         state
     };
 
-    web::serve(&app).await
+    web::serve(app).await
 }
 
