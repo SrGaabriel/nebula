@@ -29,7 +29,7 @@ pub async fn get_user(
 
     let user_id = user_id.unwrap();
     let db = &app.state.read().await.db;
-    let user = users::Entity::find_by_id(user_id as i64)
+    let user = users::Entity::find_by_id(user_id)
         .one(db)
         .await
         .expect("Failed to query user");

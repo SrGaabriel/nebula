@@ -8,7 +8,8 @@ pub struct Model {
     pub id: u64,
     pub name: String,
     pub description: Option<String>,
-    pub owner_id: u64
+    pub owner_id: u64,
+    pub permissions: u64
 }
 
 #[derive(Clone, Debug, PartialEq, EnumIter, DeriveRelation)]

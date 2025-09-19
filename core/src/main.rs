@@ -4,6 +4,7 @@ mod schema;
 mod cableway;
 mod database;
 mod service;
+mod data;
 
 use std::sync::Arc;
 use dotenvy::dotenv;

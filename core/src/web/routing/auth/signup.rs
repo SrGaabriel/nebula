@@ -1,10 +1,9 @@
-use std::collections::BTreeMap;
-
-use axum::{extract::State, http::StatusCode, Json};
-use jwt::SignWithKey;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
 use argon2::PasswordHasher;
+use axum::{extract::State, http::StatusCode, Json};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
 
+use crate::web::routing::auth::{generate_jwt_token, AuthResponse};
+use crate::web::routing::dto::UserDto;
 use crate::{app::NebulaApp, schema::users, service::snowflake::next_snowflake, web::routing::error::{error, ok, NebulaResponse}};
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
@@ -14,16 +13,10 @@ pub struct SignupRequest {
     pub password: String
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
-pub struct SignupResponse {
-    pub user_id: u64,
-    pub token: String,
-}
-
 pub async fn signup_handler(
     State(app): State<NebulaApp>,
     Json(payload): Json<SignupRequest>
-) -> NebulaResponse<SignupResponse> {
+) -> NebulaResponse<AuthResponse> {
     let state = &app.state.read().await;
     let user_with_same_email = users::Entity::find()
         .filter(users::Column::Email.eq(payload.email.clone()))
@@ -45,8 +38,8 @@ pub async fn signup_handler(
 
     let user_id = next_snowflake();
     let user = users::ActiveModel {
-        id: Set(user_id as i64),
-        name: Set(payload.name),
+        id: Set(user_id),
+        name: Set(payload.name.clone()),
         email: Set(payload.email),
         password_hash: Set(password_hash.to_owned()),
         updated_at: Set(chrono::Utc::now().naive_utc()),
@@ -54,14 +47,13 @@ pub async fn signup_handler(
     user.insert(&state.db)
         .await
         .expect("Failed to insert new user");
+    let token = generate_jwt_token(&state.jwt_key, user_id);
 
-    let mut token_claims = BTreeMap::new();
-    token_claims.insert("user_id", user_id.to_string());
-    let token = token_claims.sign_with_key(&state.jwt_key)
-        .expect("Failed to sign JWT");
-
-    ok(SignupResponse {
-        user_id,
+    ok(AuthResponse {
+        user: UserDto {
+            id: user_id,
+            name: payload.name
+        },
         token,
     })
 }

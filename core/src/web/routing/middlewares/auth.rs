@@ -48,7 +48,7 @@ pub async fn authorize(
             return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token claim").into_response();
         }
 
-        users::Entity::find_by_id(user_id.unwrap() as i64)
+        users::Entity::find_by_id(user_id.unwrap())
             .one(&state.db)
             .await
     };

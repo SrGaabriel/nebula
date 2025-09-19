@@ -23,7 +23,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Realms::OwnerId).big_integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
-                            .name("fk-realm-owner")
+                            .name("fk-realms-owner")
                             .from(Realms::Table, Realms::OwnerId)
                             .to(Users::Table, Users::Id)
                             .on_delete(ForeignKeyAction::Cascade)
