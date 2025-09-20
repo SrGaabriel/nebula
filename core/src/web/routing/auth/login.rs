@@ -43,7 +43,7 @@ pub async fn login_handler(
     }
     let dto =  crate::web::routing::dto::UserDto::from_model(&user);
 
-    let token = generate_jwt_token(&state.jwt_key, user.id as u64);
+    let token = generate_jwt_token(&state.jwt_key, user.id.0);
     ok(AuthResponse {
         user: dto,
         token,

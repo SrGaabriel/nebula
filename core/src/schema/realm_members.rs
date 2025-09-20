@@ -5,15 +5,16 @@ use sea_orm::DerivePrimaryKey;
 use sea_orm::{ActiveModelBehavior, DeriveEntityModel, DeriveRelation, EnumIter};
 use sea_query::Condition;
 use serde::{Deserialize, Serialize};
+use crate::data::snowflake::Snowflake;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "realm_members")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub id: u64,
-    pub realm_id: u64,
-    pub user_id: u64,
-    pub permissions: u8
+    pub id: Snowflake,
+    pub realm_id: Snowflake,
+    pub user_id: Snowflake,
+    pub permissions: i16
 }
 
 #[derive(Clone, Debug, PartialEq, EnumIter, DeriveRelation)]
@@ -53,8 +54,8 @@ impl ActiveModelBehavior for ActiveModel {}
 impl Entity {
     pub async fn find_membership(
         db: &DatabaseConnection,
-        realm_id: u64,
-        user_id: u64,
+        realm_id: Snowflake,
+        user_id: Snowflake,
     ) -> Result<Option<Model>, DbErr> {
         Self::find()
             .filter(
@@ -68,8 +69,8 @@ impl Entity {
 
     pub async fn user_has_realm_access(
         db: &DatabaseConnection,
-        realm_id: u64,
-        user_id: i64,
+        realm_id: Snowflake,
+        user_id: Snowflake,
     ) -> Result<bool, DbErr> {
         let count = Self::find()
             .filter(
@@ -85,8 +86,8 @@ impl Entity {
 
     pub async fn get_user_permissions(
         db: &DatabaseConnection,
-        realm_id: u64,
-        user_id: i64,
+        realm_id: Snowflake,
+        user_id: Snowflake,
     ) -> Result<Option<u8>, DbErr> {
         Self::find()
             .select_only()

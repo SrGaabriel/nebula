@@ -1,10 +1,11 @@
-mod create;
+pub mod create;
 
 use axum::Extension;
 use axum::extract::{Path, State};
 use sea_orm::EntityTrait;
 use serde::{Deserialize, Serialize};
 use crate::app::NebulaApp;
+use crate::data::snowflake::Snowflake;
 use crate::schema::{realm_members, realms, users};
 use crate::web::routing::dto::RealmDto;
 use crate::web::routing::error::{error, ok, NebulaResponse};
@@ -17,7 +18,7 @@ pub struct RealmObject {
 pub async fn get_realm(
     State(app): State<NebulaApp>,
     Extension(user): Extension<users::Model>,
-    Path(realm_id): Path<u64>
+    Path(realm_id): Path<Snowflake>
 ) -> NebulaResponse<RealmObject> {
     let db = &app.state.read().await.db;
     let realm = realms::Entity::find_by_id(realm_id)

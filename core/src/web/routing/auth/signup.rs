@@ -47,7 +47,7 @@ pub async fn signup_handler(
     user.insert(&state.db)
         .await
         .expect("Failed to insert new user");
-    let token = generate_jwt_token(&state.jwt_key, user_id);
+    let token = generate_jwt_token(&state.jwt_key, user_id.0);
 
     ok(AuthResponse {
         user: UserDto {

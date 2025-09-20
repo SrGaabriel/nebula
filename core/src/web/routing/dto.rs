@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
+use crate::data::snowflake::Snowflake;
 use crate::schema::users;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UserDto {
-    pub id: u64,
+    pub id: Snowflake,
     pub name: String
 }
 
@@ -18,9 +19,9 @@ impl UserDto {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RealmDto {
-    pub id: u64,
+    pub id: Snowflake,
     pub name: String,
-    pub owner_id: u64
+    pub owner_id: Snowflake
 }
 
 impl RealmDto {

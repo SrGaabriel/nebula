@@ -1,0 +1,30 @@
+POST {{api}}/signup
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@doe.com",
+    "password": "password"
+}
+
+> {%
+client.global.set("token", response.body.token);
+client.global.set("user", response.body.user);
+%}
+
+
+###
+
+GET {{api}}/users/@me
+Authorization: Bearer {{token}}
+
+###
+
+POST {{api}}/realms
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "My First Realm",
+  "description": "Beautiful stuff"
+}

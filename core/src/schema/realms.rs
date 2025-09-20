@@ -1,15 +1,15 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
+use crate::data::snowflake::Snowflake;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "realms")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub id: u64,
+    pub id: Snowflake,
     pub name: String,
     pub description: Option<String>,
-    pub owner_id: u64,
-    pub permissions: u64
+    pub owner_id: Snowflake,
 }
 
 #[derive(Clone, Debug, PartialEq, EnumIter, DeriveRelation)]

@@ -1,4 +1,3 @@
-// rust
 use serde::{Deserialize, Serialize};
 use core::ops::{BitAnd, BitOr, BitXor, Not};
 
@@ -18,7 +17,6 @@ pub trait BitwisePermissions: Sized {
     fn set_bits(&mut self, bits: Self::Bits);
     fn from_bits(bits: Self::Bits) -> Self;
 
-    // Convert a permission to its bit mask.
     fn mask(p: Self::Permission) -> Self::Bits;
 
     #[inline]
@@ -85,7 +83,7 @@ pub trait BitwisePermissions: Sized {
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RealmPermissions(u8);
+pub struct RealmPermissions(i16);
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -96,24 +94,24 @@ pub enum RealmPermission {
 }
 
 impl BitwisePermissions for RealmPermissions {
-    type Bits = u8;
+    type Bits = i16;
     type Permission = RealmPermission;
 
-    const EMPTY: u8 = 0;
-    const ALL: u8 = 0xFF;
+    const EMPTY: i16 = 0;
+    const ALL: i16 = i16::MAX;
 
-    #[inline] fn bits(&self) -> u8 { self.0 }
-    #[inline] fn set_bits(&mut self, bits: u8) { self.0 = bits; }
-    #[inline] fn from_bits(bits: u8) -> Self { Self(bits) }
-    #[inline] fn mask(p: RealmPermission) -> u8 { p as u8 }
+    #[inline] fn bits(&self) -> i16 { self.0 }
+    #[inline] fn set_bits(&mut self, bits: i16) { self.0 = bits; }
+    #[inline] fn from_bits(bits: i16) -> Self { Self(bits) }
+    #[inline] fn mask(p: RealmPermission) -> i16 { p as i16 }
 }
 
 impl RealmPermissions {
-    #[inline] pub const fn new(value: u8) -> Self { Self(value) }
+    #[inline] pub const fn new(value: i16) -> Self { Self(value) }
 
-    #[inline] pub const fn read() -> Self { Self(RealmPermission::Read as u8) }
-    #[inline] pub const fn write() -> Self { Self(RealmPermission::Write as u8) }
-    #[inline] pub const fn admin() -> Self { Self(RealmPermission::Admin as u8) }
+    #[inline] pub const fn read() -> Self { Self(RealmPermission::Read as i16) }
+    #[inline] pub const fn write() -> Self { Self(RealmPermission::Write as i16) }
+    #[inline] pub const fn admin() -> Self { Self(RealmPermission::Admin as i16) }
 
     #[inline] pub fn can_read(&self) -> bool { <Self as BitwisePermissions>::contains(self, RealmPermission::Read) }
     #[inline] pub fn can_write(&self) -> bool { <Self as BitwisePermissions>::contains(self, RealmPermission::Write) }
@@ -131,8 +129,8 @@ impl RealmPermissions {
 
     #[inline]
     pub fn from_slice(perms: &[RealmPermission]) -> Self {
-        let mut bits = 0u8;
-        for &p in perms { bits |= p as u8; }
+        let mut bits = 0i16;
+        for &p in perms { bits |= p as i16; }
         Self(bits)
     }
 }

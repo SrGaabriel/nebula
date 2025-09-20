@@ -29,7 +29,7 @@ impl MigrationTrait for Migration {
                     )
                     .col(
                         ColumnDef::new(RealmMembers::Permissions)
-                            .tiny_unsigned()
+                            .small_integer()
                             .not_null()
                             .default(0),
                     )

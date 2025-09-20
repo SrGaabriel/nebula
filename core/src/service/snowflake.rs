@@ -3,6 +3,7 @@ use std::{
     sync::atomic::{AtomicU8, Ordering},
     time::{SystemTime, UNIX_EPOCH},
 };
+use crate::data::snowflake::Snowflake;
 
 const LOCAL_EPOCH: u64 = 1_700_000_000;
 const SEQUENCE_BITS: u8 = 8;
@@ -51,7 +52,7 @@ impl SnowflakeWorker {
         })
     }
 
-    pub fn generate(&mut self) -> u64 {
+    pub fn generate(&mut self) -> Snowflake {
         let mut timestamp = current_millis() - LOCAL_EPOCH;
         if timestamp < self.last_timestamp {
             timestamp = self.wait_until(self.last_timestamp);
@@ -90,15 +91,15 @@ fn current_millis() -> u64 {
         .as_millis() as u64
 }
 
-fn pack_snowflake(timestamp: u64, cluster: u8, worker: u8, sequence: u8) -> u64 {
+fn pack_snowflake(timestamp: u64, cluster: u8, worker: u8, sequence: u8) -> Snowflake {
     let mut id = 0u64;
     id |= timestamp << (WORKER_BITS + SEQUENCE_BITS + CLUSTER_BITS);
     id |= (cluster as u64) << (WORKER_BITS + SEQUENCE_BITS);
     id |= (worker as u64) << SEQUENCE_BITS;
     id |= sequence as u64;
-    id
+    Snowflake(id)
 }
 
-pub fn next_snowflake() -> u64 {
+pub fn next_snowflake() -> Snowflake {
     WORKER.with(|w| w.borrow_mut().generate())
 }
