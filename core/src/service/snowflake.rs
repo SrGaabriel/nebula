@@ -3,9 +3,9 @@ use std::{
     sync::atomic::{AtomicU8, Ordering},
     time::{SystemTime, UNIX_EPOCH},
 };
+use crate::data::LOCAL_EPOCH;
 use crate::data::snowflake::Snowflake;
 
-const LOCAL_EPOCH: u64 = 1_700_000_000;
 const SEQUENCE_BITS: u8 = 8;
 const WORKER_BITS: u8 = 5;
 const CLUSTER_BITS: u8 = 5;

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use crate::data::snowflake::Snowflake;
 use crate::schema::users;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct UserDto {
     pub id: Snowflake,
     pub name: String
@@ -17,7 +17,7 @@ impl UserDto {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct RealmDto {
     pub id: Snowflake,
     pub name: String,

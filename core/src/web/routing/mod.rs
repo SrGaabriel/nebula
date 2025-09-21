@@ -4,18 +4,21 @@ use axum::{middleware, Router};
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
+use crate::realm_membership;
 
-mod auth;
-mod middlewares;
-mod error;
-mod users;
-mod dto;
-mod realms;
+pub mod auth;
+pub mod middlewares;
+pub mod error;
+pub mod users;
+pub mod dto;
+pub mod realms;
 
 pub fn router(app: NebulaApp) -> Router {
     Router::new()
         .route("/api/users/{user}", get(users::get_user))
-        .route("/api/realms/{realm_id}", get(realms::get_realm))
+        .route("/api/realms/{realm_id}",
+               get(realms::get_realm).layer(realm_membership!(app))
+        )
         .route("/api/realms", post(realms::create::create_realm))
         .route_layer(middleware::from_fn_with_state(app.clone(), middlewares::auth::authorize))
         .route("/api/login", post(auth::login::login_handler))
@@ -26,7 +29,6 @@ pub fn router(app: NebulaApp) -> Router {
                 .layer(TraceLayer::new_for_http()
                     .make_span_with(DefaultMakeSpan::default().include_headers(true))
                 )
-                .into_inner()
         )
         .with_state(app)
 }

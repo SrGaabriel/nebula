@@ -1,4 +1,4 @@
-mod routing;
+pub mod routing;
 
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
