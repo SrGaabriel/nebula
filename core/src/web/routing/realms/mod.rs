@@ -3,13 +3,12 @@ pub mod calendar;
 
 use axum::Extension;
 use axum::extract::{Path, State};
-use sea_orm::EntityTrait;
 use serde::{Deserialize, Serialize};
 use crate::app::NebulaApp;
 use crate::data::snowflake::Snowflake;
 use crate::schema::{realm_members, realms, users};
 use crate::web::routing::dto::RealmDto;
-use crate::web::routing::error::{error, ok, NebulaResponse};
+use crate::web::routing::error::{ok, NebulaResponse};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct RealmObject {

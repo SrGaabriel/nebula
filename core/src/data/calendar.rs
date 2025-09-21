@@ -35,7 +35,6 @@ pub enum Frequency {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum RecurrenceEnd {
-    Never,
     Count(u32),
     Until(DateTime<Utc>),
 }
@@ -58,7 +57,7 @@ pub enum MonthlyPattern {
 pub struct RecurrenceRule {
     pub frequency: Frequency,
     pub interval: u32,
-    pub end: RecurrenceEnd,
+    pub end: Option<RecurrenceEnd>,
     pub weekly_pattern: Option<WeeklyPattern>,
     pub monthly_pattern: Option<MonthlyPattern>,
 }
@@ -68,7 +67,7 @@ impl RecurrenceRule {
         Self {
             frequency: Frequency::Daily,
             interval,
-            end: RecurrenceEnd::Never,
+            end: None,
             weekly_pattern: None,
             monthly_pattern: None,
         }
@@ -79,7 +78,7 @@ impl RecurrenceRule {
         Self {
             frequency: Frequency::Weekly,
             interval,
-            end: RecurrenceEnd::Never,
+            end: None,
             weekly_pattern: Some(WeeklyPattern { days: days_set }),
             monthly_pattern: None,
         }
@@ -89,7 +88,7 @@ impl RecurrenceRule {
         Self {
             frequency: Frequency::Monthly,
             interval,
-            end: RecurrenceEnd::Never,
+            end: None,
             weekly_pattern: None,
             monthly_pattern: Some(MonthlyPattern::DayOfMonth(day)),
         }
@@ -99,7 +98,7 @@ impl RecurrenceRule {
         Self {
             frequency: Frequency::Monthly,
             interval,
-            end: RecurrenceEnd::Never,
+            end: None,
             weekly_pattern: None,
             monthly_pattern: Some(MonthlyPattern::WeekdayOccurrence { weekday, occurrence }),
         }
@@ -109,19 +108,19 @@ impl RecurrenceRule {
         Self {
             frequency: Frequency::Yearly,
             interval,
-            end: RecurrenceEnd::Never,
+            end: None,
             weekly_pattern: None,
             monthly_pattern: None,
         }
     }
 
     pub fn with_count(mut self, count: u32) -> Self {
-        self.end = RecurrenceEnd::Count(count);
+        self.end = Some(RecurrenceEnd::Count(count));
         self
     }
 
     pub fn with_end_date(mut self, end_date: DateTime<Utc>) -> Self {
-        self.end = RecurrenceEnd::Until(end_date);
+        self.end = Some(RecurrenceEnd::Until(end_date));
         self
     }
 
@@ -157,17 +156,17 @@ impl RecurrenceRule {
                         }
 
                         match &self.end {
-                            RecurrenceEnd::Count(max_count) => {
+                            Some(RecurrenceEnd::Count(max_count)) => {
                                 if count >= *max_count {
                                     return occurrences;
                                 }
                             }
-                            RecurrenceEnd::Until(until_date) => {
+                            Some(RecurrenceEnd::Until(until_date)) => {
                                 if day_date > *until_date {
                                     return occurrences;
                                 }
                             }
-                            RecurrenceEnd::Never => {}
+                            None => {}
                         }
 
                         if day_date >= range_start && day_date <= range_end {
@@ -194,20 +193,19 @@ impl RecurrenceRule {
             return occurrences;
         }
 
-        // Original logic for non-weekly patterns
         while current <= range_end && occurrences.len() < max {
             match &self.end {
-                RecurrenceEnd::Count(max_count) => {
+                Some(RecurrenceEnd::Count(max_count)) => {
                     if count >= *max_count {
                         break;
                     }
                 }
-                RecurrenceEnd::Until(until_date) => {
+                Some(RecurrenceEnd::Until(until_date)) => {
                     if current > *until_date {
                         break;
                     }
                 }
-                RecurrenceEnd::Never => {}
+                None => {}
             }
 
             if current >= range_start && current <= range_end {
@@ -239,7 +237,7 @@ impl RecurrenceRule {
         }
 
         match &self.end {
-            RecurrenceEnd::Until(until_date) => {
+            Some(RecurrenceEnd::Until(until_date)) => {
                 if date > *until_date {
                     return false;
                 }
@@ -380,17 +378,17 @@ impl RecurrenceRule {
         packed |= (self.interval as u64) << INTERVAL_SHIFT;
 
         match &self.end {
-            RecurrenceEnd::Never => {
+            None => {
                 packed |= 0u64 << END_TYPE_SHIFT;
             }
-            RecurrenceEnd::Count(count) => {
+            Some(RecurrenceEnd::Count(count)) => {
                 if *count > MAX_COUNT {
                     return Err("Count exceeds maximum allowed value");
                 }
                 packed |= 1u64 << END_TYPE_SHIFT;
                 packed |= (*count as u64) << END_VALUE_SHIFT;
             }
-            RecurrenceEnd::Until(datetime) => {
+            Some(RecurrenceEnd::Until(datetime)) => {
                 let base_date = DateTime::from_timestamp(LOCAL_EPOCH as i64, 0).unwrap();
                 let days_diff = (datetime.timestamp() - base_date.timestamp()) / (24 * 60 * 60);
 
@@ -449,15 +447,15 @@ impl RecurrenceRule {
         let end_type = (packed >> END_TYPE_SHIFT) & ((1u64 << END_TYPE_BITS) - 1);
         let end_value = (packed >> END_VALUE_SHIFT) & ((1u64 << END_VALUE_BITS) - 1);
         let end = match end_type {
-            0 => RecurrenceEnd::Never,
-            1 => RecurrenceEnd::Count(end_value as u32),
+            0 => None,
+            1 => Some(RecurrenceEnd::Count(end_value as u32)),
             2 => {
                 let base_date = DateTime::from_timestamp(1577836800, 0).unwrap();
                 let days_diff = end_value as i64;
                 let timestamp = base_date.timestamp() + (days_diff * 24 * 60 * 60);
                 let datetime = DateTime::from_timestamp(timestamp, 0)
                     .ok_or("Invalid timestamp in packed data")?;
-                RecurrenceEnd::Until(datetime)
+                Some(RecurrenceEnd::Until(datetime))
             }
             _ => return Err("Invalid end type"),
         };
@@ -538,7 +536,7 @@ mod tests {
         let rule = RecurrenceRule {
             frequency: Frequency::Monthly,
             interval: 3,
-            end: RecurrenceEnd::Until(DateTime::parse_from_rfc3339("2030-12-31T00:00:00Z").unwrap().with_timezone(&Utc)),
+            end: Some(RecurrenceEnd::Until(DateTime::parse_from_rfc3339("2030-12-31T00:00:00Z").unwrap().with_timezone(&Utc))),
             weekly_pattern: None,
             monthly_pattern: Some(MonthlyPattern::WeekdayOccurrence {
                 weekday: Weekday::Fri,

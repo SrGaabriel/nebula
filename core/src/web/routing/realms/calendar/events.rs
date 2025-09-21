@@ -55,7 +55,7 @@ pub async fn create_event(
         end_time: Set(payload.end_time),
         recurrence: Set(encoded_recurrence),
     };
-    let obj = realm_events::Entity::insert(event)
+    realm_events::Entity::insert(event)
         .exec(db)
         .await
         .expect("Failed to insert event");

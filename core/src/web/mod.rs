@@ -2,8 +2,6 @@ pub mod routing;
 
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
 use crate::app::NebulaApp;
 
 pub async fn serve(app: NebulaApp) {

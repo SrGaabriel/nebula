@@ -1,7 +1,7 @@
+use chrono::{DateTime, Utc};
 use dotenvy::dotenv;
 use reqwest::{Client, Method, Response};
-use reqwest_tracing::TracingMiddleware;
-use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, RequestBuilder};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use tokio::task;
@@ -9,9 +9,10 @@ use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 use nebula_core::data::calendar::RecurrenceRule;
 use nebula_core::web::routing::auth::{AuthResponse, signup::SignupRequest};
-use nebula_core::web::routing::dto::{RealmDto, RealmEventDto, UserDto};
+use nebula_core::web::routing::dto::{RealmDto, RealmEventDto, RealmEventOccurrenceList, UserDto};
 use nebula_core::web::routing::realms::{RealmObject, create::CreateRealmPayload};
 use nebula_core::web::routing::realms::calendar::events::CreateEventRequest;
+use nebula_core::web::routing::realms::calendar::occurrences::OccurrenceQuery;
 use nebula_core::web::routing::realms::calendar::RealmEventObject;
 use nebula_core::web::routing::users::UserObject;
 
@@ -78,12 +79,12 @@ impl TestContext {
     async fn create_realm_event(&mut self) -> RealmEventDto {
         let realm_id = self.realm_response.as_ref().unwrap().id;
         let event = CreateEventRequest {
-            name: "Party".to_string(),
-            description: Some("Birthday party".to_string()),
-            location: Some("My house".to_string()),
-            start_time: chrono::Utc::now(),
-            end_time: Some(chrono::Utc::now() + chrono::Duration::hours(4)),
-            recurrence: Some(RecurrenceRule::yearly(0))
+            name: "Gym".to_string(),
+            description: Some("Workout time".to_string()),
+            location: Some("Dumbfit".to_string()),
+            start_time: DateTime::parse_from_rfc3339("2024-06-01T17:00:00Z").unwrap().with_timezone(&Utc),
+            end_time: Some(DateTime::parse_from_rfc3339("2024-06-01T18:00:00Z").unwrap().with_timezone(&Utc)),
+            recurrence: Some(RecurrenceRule::weekly(1, vec![chrono::Weekday::Mon, chrono::Weekday::Wed, chrono::Weekday::Fri]))
         };
         let event = self
             .authorized_pst::<CreateEventRequest, RealmEventObject>(Method::POST, &format!("api/realms/{realm_id}/calendar/events"), &event)
@@ -93,48 +94,78 @@ impl TestContext {
         event
     }
 
+    async fn get_realm_schedule(&self) -> RealmEventOccurrenceList {
+        let realm_id = self.realm_response.as_ref().unwrap().id;
+        let start_time = DateTime::parse_from_rfc3339("2024-06-01T00:00:00Z").unwrap().with_timezone(&Utc);
+        let end_time = DateTime::parse_from_rfc3339("2024-07-01T00:00:00Z").unwrap().with_timezone(&Utc);
+        self
+            .authorized_pqry(
+                Method::GET,
+                &format!("api/realms/{realm_id}/calendar/schedule"),
+                OccurrenceQuery {
+                    start: start_time,
+                    end: end_time
+                }
+            ).await
+    }
+
     async fn authorized_pst<T: serde::Serialize, R: DeserializeOwned>(&self, method: Method, endpoint: &str, body: &T) -> R {
         let response = self
             .authorized_snd(method, endpoint, body)
             .await;
-
-        if response.status().is_success() {
-            response
-                .json()
-                .await
-                .expect(format!("Failed to parse JSON response at {}", endpoint).as_str())
-        } else {
-            panic!("Request to {} failed with status {}, body: {}", endpoint, response.status(), response.text().await.unwrap());
-        }
+        parse_body(endpoint, response).await
     }
 
     async fn authorized_fch<T: DeserializeOwned>(&self, method: Method, endpoint: &str) -> T {
-        self
+        let response = self
             .authorized_qry(method, endpoint)
+            .await;
+        parse_body(endpoint, response).await
+    }
+
+    async fn authorized_pqry<T: DeserializeOwned, P: Serialize>(&self, method: Method, endpoint: &str, params: P) -> T {
+        let response = self.authorized_req(method, endpoint)
+            .query(&params)
+            .send()
             .await
-            .json()
-            .await
-            .expect(format!("Failed to parse JSON response at {}", endpoint).as_str())
+            .unwrap();
+        parse_body(endpoint, response).await
     }
 
     async fn authorized_qry(&self, method: Method, endpoint: &str) -> Response {
-        self.client
-            .request(method, &format!("{}/{}", self.base_url, endpoint))
-            .header("Authorization", format!("Bearer {}", self.token.as_ref().unwrap()))
+        self.authorized_req(method, endpoint)
             .send()
             .await
             .unwrap()
     }
 
     async fn authorized_snd<T : Serialize>(&self, method: Method, endpoint: &str, body: &T) -> Response {
-        self.client
-            .request(method, &format!("{}/{}", self.base_url, endpoint))
-            .header("Authorization", format!("Bearer {}", self.token.as_ref().unwrap()))
+        self.authorized_req(method, endpoint)
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
             .await
             .expect("Failed to send request")
+    }
+
+    #[inline]
+    fn authorized_req(&self, method: Method, endpoint: &str) -> RequestBuilder {
+        self.client
+            .request(method, &format!("{}/{}", self.base_url, endpoint))
+            .header("Authorization", format!("Bearer {}", self.token.as_ref().unwrap()))
+    }
+}
+
+async fn parse_body<R : DeserializeOwned>(endpoint: &str, response: Response) -> R {
+    if response.status().is_success() {
+        let response_body = response.text().await.unwrap();
+        let deserialized = serde_json::from_str(&response_body);
+        match deserialized {
+            Ok(data) => data,
+            Err(err) => panic!("Failed to deserialize response at {}: {} for body {}", endpoint, err, response_body)
+        }
+    } else {
+        panic!("Request to {} failed with status {}, body: {}", endpoint, response.status(), response.text().await.unwrap());
     }
 }
 
@@ -170,6 +201,7 @@ async fn test_complete_flow() {
     assert!(context.token.is_some());
     assert!(context.user_response.is_some());
     println!("Signed up user: {:?}", signup_response);
+    println!("Token: {:?}", context.token.as_ref().unwrap());
 
     let user = context.get_current_user().await;
     assert_eq!(user.id, signup_response.id);
@@ -186,6 +218,12 @@ async fn test_complete_flow() {
 
     let created_realm_event = context.create_realm_event().await;
     println!("Created realm event: {:?}", created_realm_event);
+
+    let schedule = context.get_realm_schedule().await;
+    assert!(!schedule.events.is_empty());
+    assert!(!schedule.occurrences.is_empty());
+    assert_eq!(schedule.occurrences.len(), 12);
+    println!("Fetched realm schedule: {:?}", schedule);
 
     println!("Test complete flow succeeded");
 }

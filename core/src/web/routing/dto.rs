@@ -63,3 +63,16 @@ impl RealmEventDto {
         }
     }
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RealmEventOccurrenceDto {
+    pub event_index: i8,
+    pub occurrence_start: chrono::DateTime<chrono::Utc>,
+    pub occurrence_end: Option<chrono::DateTime<chrono::Utc>>
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RealmEventOccurrenceList {
+    pub events: Vec<RealmEventDto>,
+    pub occurrences: Vec<RealmEventOccurrenceDto>
+}

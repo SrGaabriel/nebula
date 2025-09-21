@@ -17,10 +17,16 @@ pub fn router(app: NebulaApp) -> Router {
     Router::new()
         .route("/api/users/{user}", get(users::get_user))
         .route("/api/realms/{realm_id}",
-               get(realms::get_realm).layer(realm_membership!(app))
+               get(realms::get_realm)
+                   .layer(realm_membership!(app))
         )
         .route("/api/realms/{realm_id}/calendar/events",
-               post(realms::calendar::events::create_event).layer(realm_membership!(app, [Write]))
+               post(realms::calendar::events::create_event)
+                   .layer(realm_membership!(app, [Write]))
+        )
+        .route("/api/realms/{realm_id}/calendar/schedule",
+               get(realms::calendar::occurrences::get_occurrences)
+                   .layer(realm_membership!(app))
         )
         .route("/api/realms", post(realms::create::create_realm))
         .route_layer(middleware::from_fn_with_state(app.clone(), middlewares::auth::authorize))
