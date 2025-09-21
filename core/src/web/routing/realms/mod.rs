@@ -1,5 +1,5 @@
 pub mod create;
-mod calendar;
+pub mod calendar;
 
 use axum::Extension;
 use axum::extract::{Path, State};

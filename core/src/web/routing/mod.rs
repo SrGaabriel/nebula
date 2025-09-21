@@ -19,6 +19,9 @@ pub fn router(app: NebulaApp) -> Router {
         .route("/api/realms/{realm_id}",
                get(realms::get_realm).layer(realm_membership!(app))
         )
+        .route("/api/realms/{realm_id}/calendar/events",
+               post(realms::calendar::events::create_event).layer(realm_membership!(app, [Write]))
+        )
         .route("/api/realms", post(realms::create::create_realm))
         .route_layer(middleware::from_fn_with_state(app.clone(), middlewares::auth::authorize))
         .route("/api/login", post(auth::login::login_handler))

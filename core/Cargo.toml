@@ -47,4 +47,6 @@ async-std = { version = "1.13.2", features = ["attributes", "tokio1"] }
 
 [dev-dependencies]
 reqwest = { version = "0.12", features = ["json"] }
+reqwest-tracing = { version = "0.5.8", features = ["tracing-opentelemetry_0_31_pkg"] }
+reqwest-middleware = { version = "0.4.2", features = ["json"] }
 tokio-test = "0.4"

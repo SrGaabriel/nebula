@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::data::snowflake::Snowflake;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "realm_members")]
+#[sea_orm(table_name = "realm_events")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: Snowflake,

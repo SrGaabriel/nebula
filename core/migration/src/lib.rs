@@ -3,6 +3,7 @@ pub use sea_orm_migration::prelude::*;
 mod m20250914_040704_create_users;
 mod m20250914_195455_create_realms;
 mod m20250919_202303_create_realm_members;
+mod m20250921_015955_create_realm_events;
 
 pub struct Migrator;
 
@@ -13,6 +14,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20250914_040704_create_users::Migration),
             Box::new(m20250914_195455_create_realms::Migration),
             Box::new(m20250919_202303_create_realm_members::Migration),
+            Box::new(m20250921_015955_create_realm_events::Migration),
         ]
     }
 }

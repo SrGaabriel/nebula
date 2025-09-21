@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use sea_orm::{ColIdx, QueryResult, TryFromU64, TryGetError, TryGetable};
 use sea_orm::sqlx::{Database, Postgres, Type};
 use sea_orm::sqlx::postgres::PgHasArrayType;
@@ -77,5 +78,11 @@ impl From<Snowflake> for Value {
 impl Nullable for Snowflake {
     fn null() -> Value {
         Value::BigInt(None)
+    }
+}
+
+impl Display for Snowflake {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }

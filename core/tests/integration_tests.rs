@@ -1,29 +1,37 @@
 use dotenvy::dotenv;
 use reqwest::{Client, Method, Response};
+use reqwest_tracing::TracingMiddleware;
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use tokio::task;
+use tracing::Level;
+use tracing_subscriber::FmtSubscriber;
+use nebula_core::data::calendar::RecurrenceRule;
 use nebula_core::web::routing::auth::{AuthResponse, signup::SignupRequest};
-use nebula_core::web::routing::dto::{RealmDto, UserDto};
+use nebula_core::web::routing::dto::{RealmDto, RealmEventDto, UserDto};
 use nebula_core::web::routing::realms::{RealmObject, create::CreateRealmPayload};
+use nebula_core::web::routing::realms::calendar::events::CreateEventRequest;
+use nebula_core::web::routing::realms::calendar::RealmEventObject;
 use nebula_core::web::routing::users::UserObject;
 
+#[derive(Default)]
 struct TestContext {
-    client: Client,
+    client: ClientWithMiddleware,
     base_url: String,
     token: Option<String>,
     user_response: Option<UserDto>,
     realm_response: Option<RealmDto>,
+    realm_event_response: Option<RealmEventDto>,
 }
 
 impl TestContext {
     fn new(base_url: String) -> Self {
         Self {
-            client: Client::new(),
+            client: ClientBuilder::new(Client::new())
+                .build(),
             base_url,
-            token: None,
-            user_response: None,
-            realm_response: None,
+            ..Default::default()
         }
     }
 
@@ -67,13 +75,37 @@ impl TestContext {
         self.authorized_fch(Method::GET, &format!("api/realms/{}", realm_id)).await
     }
 
+    async fn create_realm_event(&mut self) -> RealmEventDto {
+        let realm_id = self.realm_response.as_ref().unwrap().id;
+        let event = CreateEventRequest {
+            name: "Party".to_string(),
+            description: Some("Birthday party".to_string()),
+            location: Some("My house".to_string()),
+            start_time: chrono::Utc::now(),
+            end_time: Some(chrono::Utc::now() + chrono::Duration::hours(4)),
+            recurrence: Some(RecurrenceRule::yearly(0))
+        };
+        let event = self
+            .authorized_pst::<CreateEventRequest, RealmEventObject>(Method::POST, &format!("api/realms/{realm_id}/calendar/events"), &event)
+            .await
+            .event;
+        self.realm_event_response = Some(event.clone());
+        event
+    }
+
     async fn authorized_pst<T: serde::Serialize, R: DeserializeOwned>(&self, method: Method, endpoint: &str, body: &T) -> R {
-        self
+        let response = self
             .authorized_snd(method, endpoint, body)
-            .await
-            .json()
-            .await
-            .expect(format!("Failed to parse JSON response at {}", endpoint).as_str())
+            .await;
+
+        if response.status().is_success() {
+            response
+                .json()
+                .await
+                .expect(format!("Failed to parse JSON response at {}", endpoint).as_str())
+        } else {
+            panic!("Request to {} failed with status {}, body: {}", endpoint, response.status(), response.text().await.unwrap());
+        }
     }
 
     async fn authorized_fch<T: DeserializeOwned>(&self, method: Method, endpoint: &str) -> T {
@@ -115,6 +147,12 @@ fn get_api_base_url() -> String {
 
 #[tokio::test]
 async fn test_complete_flow() {
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(Level::TRACE)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("setting default subscriber failed");
+
     let _output = std::process::Command::new("py")
         .arg("migrate.py")
         .arg("fresh")
@@ -145,6 +183,9 @@ async fn test_complete_flow() {
     let fetched_realm = context.get_realm(created_realm.id.0).await;
     assert_eq!(fetched_realm.realm.id, created_realm.id);
     println!("Fetched realm: {:?}", fetched_realm);
+
+    let created_realm_event = context.create_realm_event().await;
+    println!("Created realm event: {:?}", created_realm_event);
 
     println!("Test complete flow succeeded");
 }

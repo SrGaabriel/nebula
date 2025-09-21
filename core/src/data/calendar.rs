@@ -132,11 +132,69 @@ impl RecurrenceRule {
         range_end: DateTime<Utc>,
         max_occurrences: Option<usize>,
     ) -> Vec<DateTime<Utc>> {
+        assert!(self.interval > 0, "Interval must be greater than 0");
         let mut occurrences = Vec::new();
         let mut current = start_time;
         let mut count = 0;
         let max = max_occurrences.unwrap_or(1000);
 
+        if matches!(self.frequency, Frequency::Weekly) && self.weekly_pattern.is_some() {
+            let pattern = self.weekly_pattern.as_ref().unwrap();
+            let mut week_start = start_time;
+
+            let days_since_monday = start_time.weekday().num_days_from_monday();
+            week_start = week_start - Duration::days(days_since_monday as i64);
+
+            let mut week_count = 0;
+
+            while week_start <= range_end && occurrences.len() < max {
+                if week_count % self.interval == 0 {
+                    for day_offset in 0..7 {
+                        let day_date = week_start + Duration::days(day_offset);
+
+                        if day_date < start_time {
+                            continue;
+                        }
+
+                        match &self.end {
+                            RecurrenceEnd::Count(max_count) => {
+                                if count >= *max_count {
+                                    return occurrences;
+                                }
+                            }
+                            RecurrenceEnd::Until(until_date) => {
+                                if day_date > *until_date {
+                                    return occurrences;
+                                }
+                            }
+                            RecurrenceEnd::Never => {}
+                        }
+
+                        if day_date >= range_start && day_date <= range_end {
+                            if pattern.days.contains(&day_date.weekday()) {
+                                occurrences.push(day_date);
+                                count += 1;
+
+                                if occurrences.len() >= max {
+                                    return occurrences;
+                                }
+                            }
+                        }
+
+                        if count > 10000 {
+                            return occurrences;
+                        }
+                    }
+                }
+
+                week_start = week_start + Duration::weeks(1);
+                week_count += 1;
+            }
+
+            return occurrences;
+        }
+
+        // Original logic for non-weekly patterns
         while current <= range_end && occurrences.len() < max {
             match &self.end {
                 RecurrenceEnd::Count(max_count) => {
@@ -494,4 +552,19 @@ mod tests {
         println!("Unpacked: {:?}", unpacked);
         assert_eq!(rule, unpacked);
     }
+
+    #[test]
+    fn generate_occurrences() {
+        let rule = RecurrenceRule::weekly(1, vec![Weekday::Mon, Weekday::Wed])
+            .with_count(5);
+        let start_time = DateTime::parse_from_rfc3339("2023-01-02T10:00:00Z").unwrap().with_timezone(&Utc);
+        let range_start = DateTime::parse_from_rfc3339("2023-01-01T00:00:00Z").unwrap().with_timezone(&Utc);
+        let range_end = DateTime::parse_from_rfc3339("2023-01-31T23:59:59Z").unwrap().with_timezone(&Utc);
+        let occurrences = rule.generate_occurrences(start_time, range_start, range_end, None);
+        for occ in &occurrences {
+            println!("Occurrence: {}", occ);
+        }
+        assert_eq!(occurrences.len(), 5);
+    }
+
 }
