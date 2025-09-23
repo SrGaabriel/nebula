@@ -3,8 +3,8 @@
 /build
 erl_crash.dump
 
-# Created by https://www.toptal.com/developers/gitignore/api/node,windows,kotlin,java,gradle,svelte,linux,macos,rust
-# Edit at https://www.toptal.com/developers/gitignore?templates=node,windows,kotlin,java,gradle,svelte,linux,macos,rust
+# Created by https://www.toptal.com/developers/gitignore/api/node,windows,kotlin,java,gradle,svelte,linux,macos,rust,visualstudiocode
+# Edit at https://www.toptal.com/developers/gitignore?templates=node,windows,kotlin,java,gradle,svelte,linux,macos,rust,visualstudiocode
 
 ### Java ###
 # Compiled class file
@@ -255,6 +255,25 @@ Cargo.lock
 .svelte-kit/
 package
 
+### VisualStudioCode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+.ionide
+
 ### Windows ###
 # Windows thumbnail cache files
 Thumbs.db
@@ -308,4 +327,4 @@ gradle-app.setting
 # Java heap dump
 *.hprof
 
-# End of https://www.toptal.com/developers/gitignore/api/node,windows,kotlin,java,gradle,svelte,linux,macos,rust
+# End of https://www.toptal.com/developers/gitignore/api/node,windows,kotlin,java,gradle,svelte,linux,macos,rust,visualstudiocode
