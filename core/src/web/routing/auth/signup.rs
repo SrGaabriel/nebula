@@ -17,10 +17,10 @@ pub async fn signup_handler(
     State(app): State<NebulaApp>,
     Json(payload): Json<SignupRequest>
 ) -> NebulaResponse<AuthResponse> {
-    let state = &app.state.read().await;
+    let db = &app.db;
     let user_with_same_email = users::Entity::find()
         .filter(users::Column::Email.eq(payload.email.clone()))
-        .one(&state.db)
+        .one(db)
         .await
         .expect("Failed to query the database");
 
@@ -31,7 +31,7 @@ pub async fn signup_handler(
         );
     }
 
-    let password_hash = &state.argon.hash_password(
+    let password_hash = &app.config.argon2.hash_password(
         payload.password.as_bytes(),
         &app.config.argon_salt
     ).expect("Failed to hash password").to_string();
@@ -44,10 +44,10 @@ pub async fn signup_handler(
         password_hash: Set(password_hash.to_owned()),
         updated_at: Set(chrono::Utc::now().naive_utc()),
     };
-    user.insert(&state.db)
+    user.insert(db)
         .await
         .expect("Failed to insert new user");
-    let token = generate_jwt_token(&state.jwt_key, user_id.0);
+    let token = generate_jwt_token(&app.config.jwt_key, user_id.0);
 
     ok(AuthResponse {
         user: UserDto {

@@ -21,10 +21,9 @@ pub async fn login_handler(
     State(app): State<NebulaApp>,
     Json(payload): Json<LoginRequest>
 ) -> NebulaResponse<AuthResponse> {
-    let state = &app.state.read().await;
     let user = users::Entity::find()
         .filter(users::Column::Email.eq(payload.email.clone()))
-        .one(&state.db)
+        .one(&app.db)
         .await
         .expect("Failed to query the database");
 
@@ -34,7 +33,7 @@ pub async fn login_handler(
     let user = user.unwrap();
     let password_hash = PasswordHash::new(&user.password_hash).expect("Failed to hash password");
 
-    let is_password_valid = app.state.read().await.argon.verify_password(
+    let is_password_valid = app.config.argon2.verify_password(
         payload.password.as_bytes(),
         &password_hash
     ).is_ok();
@@ -43,7 +42,7 @@ pub async fn login_handler(
     }
     let dto =  crate::web::routing::dto::UserDto::from_model(&user);
 
-    let token = generate_jwt_token(&state.jwt_key, user.id.0);
+    let token = generate_jwt_token(&app.config.jwt_key, user.id.0);
     ok(AuthResponse {
         user: dto,
         token,

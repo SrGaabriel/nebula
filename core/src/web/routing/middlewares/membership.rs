@@ -15,13 +15,14 @@ pub async fn authorize_membership_with_permissions(
     next: Next,
     required_perms: Option<RealmPermissions>,
 ) -> Response {
+    let db = &app.db;
     let user = req.extensions().get::<crate::schema::users::Model>();
     if user.is_none() {
         panic!("User not found in request extensions");
     }
     let user = user.unwrap();
     let realm = realms::Entity::find_by_id(realm_id)
-        .one(&app.state.read().await.db)
+        .one(db)
         .await
         .expect("Failed to query realm");
 
@@ -34,7 +35,7 @@ pub async fn authorize_membership_with_permissions(
 
     let realm = realm.unwrap();
     let membership = crate::schema::realm_members::Entity::find_membership(
-        &app.state.read().await.db,
+        db,
         realm.id,
         user.id
     ).await.expect("Failed to query realm membership");

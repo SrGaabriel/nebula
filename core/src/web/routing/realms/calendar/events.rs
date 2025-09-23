@@ -3,6 +3,7 @@ use axum::extract::{Path, State};
 use chrono::{DateTime, Utc};
 use sea_orm::{EntityTrait, Set};
 use crate::app::NebulaApp;
+use crate::cableway::events::calendar::send_event_created;
 use crate::data::calendar::RecurrenceRule;
 use crate::data::snowflake::Snowflake;
 use crate::schema::users;
@@ -28,7 +29,7 @@ pub async fn create_event(
     State(app): State<NebulaApp>,
     Json(payload): Json<CreateEventRequest>
 ) -> NebulaResponse<RealmEventObject> {
-    let db = &app.state.read().await.db;
+    let db = &app.db;
     let encoded_recurrence = match &payload.recurrence {
         Some(rule) => {
             let encoded = rule.to_u64();
@@ -59,18 +60,26 @@ pub async fn create_event(
         .exec(db)
         .await
         .expect("Failed to insert event");
+    let dto = RealmEventDto {
+        id: snowflake,
+        name: payload.name.clone(),
+        description: payload.description.clone(),
+        location: payload.location.clone(),
+        created_by: user.id,
+        realm_id,
+        start_time: payload.start_time,
+        end_time: payload.end_time,
+        recurrence: payload.recurrence.clone()
+    };
+
+    send_event_created(
+        &app.cableway,
+        dto.clone()
+    )
+        .await
+        .expect("Failed to send event created message");
 
     ok(RealmEventObject {
-        event: RealmEventDto {
-            id: snowflake,
-            name: payload.name,
-            description: payload.description,
-            location: payload.location,
-            created_by: user.id,
-            realm_id,
-            start_time: payload.start_time,
-            end_time: payload.end_time,
-            recurrence: payload.recurrence
-        }
+        event: dto
     })
 }

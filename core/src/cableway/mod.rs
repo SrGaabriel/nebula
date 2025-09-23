@@ -1,3 +1,5 @@
+pub mod events;
+
 use async_nats::{Client, ServerAddr};
 use crate::app::AppConfig;
 

@@ -8,7 +8,7 @@ pub type SubscriptionConfig {
   SubscriptionConfig(
     subject: String,
     handler: fn(glats.Message) -> Nil,
-    timeout_ms: Int,
+    timeout_ms: Option(Int),
     on_error: Option(fn(String) -> Nil),
     max_retries: Int,
   )
@@ -25,7 +25,7 @@ pub fn new_subscription(
   SubscriptionConfig(
     subject: subject,
     handler: handler,
-    timeout_ms: 5000,
+    timeout_ms: None,
     on_error: None,
     max_retries: 3,
   )
@@ -35,7 +35,7 @@ pub fn with_timeout(
   config: SubscriptionConfig,
   timeout_ms: Int,
 ) -> SubscriptionConfig {
-  SubscriptionConfig(..config, timeout_ms: timeout_ms)
+  SubscriptionConfig(..config, timeout_ms: Some(timeout_ms))
 }
 
 pub fn with_error_handler(
@@ -105,30 +105,46 @@ fn enhanced_listen_loop(
   config: SubscriptionConfig,
   error_count: Int,
 ) -> Nil {
-  case process.receive(subject, config.timeout_ms) {
-    Ok(glats.ReceivedMessage(_conn, _sid, _subject, message)) -> {
-      config.handler(message)
-      enhanced_listen_loop(subject, config, 0)
-    }
-    Error(_) -> {
-      let new_error_count = error_count + 1
-
-      case new_error_count > 10 {
-        True -> {
-          let error_msg =
-            "Too many consecutive timeouts for: " <> config.subject
-          case config.on_error {
-            Some(error_handler) -> error_handler(error_msg)
-            None -> io.println("⚠️ " <> error_msg)
-          }
-          enhanced_listen_loop(subject, config, 0)
+  case config.timeout_ms {
+    Some(timeout) -> {
+      case process.receive(subject, timeout) {
+        Ok(glats.ReceivedMessage(_conn, _sid, _subject, message)) -> {
+          handle_message(subject, config, message)
         }
-        False -> {
-          enhanced_listen_loop(subject, config, new_error_count)
+        Error(_) -> {
+          let new_error_count = error_count + 1
+
+          case new_error_count > 10 {
+            True -> {
+              let error_msg =
+                "Too many consecutive timeouts for: " <> config.subject
+              case config.on_error {
+                Some(error_handler) -> error_handler(error_msg)
+                None -> io.println("⚠️ " <> error_msg)
+              }
+              enhanced_listen_loop(subject, config, 0)
+            }
+            False -> {
+              enhanced_listen_loop(subject, config, new_error_count)
+            }
+          }
         }
       }
     }
+    None -> {
+      let glats.ReceivedMessage(_conn, _sid, _subject, message) = process.receive_forever(subject)
+      handle_message(subject, config, message)
+    }
   }
+}
+
+fn handle_message(
+  subject: process.Subject(glats.SubscriptionMessage),
+  config: SubscriptionConfig,
+  message: glats.Message,
+) -> Nil {
+  config.handler(message)
+  enhanced_listen_loop(subject, config, 0)
 }
 
 pub fn quick_subscribe(

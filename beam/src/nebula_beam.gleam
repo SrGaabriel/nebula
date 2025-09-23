@@ -35,10 +35,15 @@ pub fn main() {
   let complex_subscriptions = [] // todo: use only complex subscriptions with well defined error handlers retry timeouts etc
   let _handles = subscription_manager.start_managed_subscriptions(conn.data, complex_subscriptions)
 
+  subscription_manager.quick_subscribe(conn.data, "realm.*.calendar.event_created", global_logger) // todo: remove this
   subscription_manager.quick_subscribe(conn.data, "internal.status", handle_status_message)
 
   process.sleep_forever()
   Ok(Nil)
+}
+
+fn global_logger(message: glats.Message) -> Nil {
+  io.println("Got message: " <> message.body <> " on subject: " <> message.topic)
 }
 
 fn handle_status_message(message: glats.Message) -> Nil {

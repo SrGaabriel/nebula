@@ -21,8 +21,7 @@ pub async fn create_realm(
     Extension(user): Extension<users::Model>,
     axum::Json(payload): axum::Json<CreateRealmPayload>
 ) -> NebulaResponse<RealmObject> {
-    let db = &app.state.read().await.db;
-
+    let db = &app.db;
     let existing_realm = realms::Entity::find()
         .filter(realms::Column::Name.eq(payload.name.clone()))
         .filter(realms::Column::OwnerId.eq(user.id))

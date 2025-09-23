@@ -17,7 +17,7 @@ pub async fn run_server() {
     let db = database::connect(&config).await;
 
     let state = Arc::new(RwLock::new(
-        AppState::new_filling_env_defaults(db)
+        AppState::new()
     ));
 
     let cableway_client = cableway::connect(&config).await;
@@ -27,7 +27,8 @@ pub async fn run_server() {
     let app = NebulaApp {
         config,
         cableway: cableway_client,
-        state
+        state,
+        db
     };
 
     web::serve(app).await

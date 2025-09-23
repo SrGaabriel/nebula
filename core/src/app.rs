@@ -6,6 +6,7 @@ use argon2::password_hash::SaltString;
 use argon2::Argon2;
 use async_nats::Client;
 use hmac::{Hmac, Mac};
+use sea_orm::DatabaseConnection;
 use sha2::Sha256;
 use tokio::sync::RwLock;
 
@@ -13,30 +14,17 @@ use tokio::sync::RwLock;
 pub struct NebulaApp {
     pub config: AppConfig,
     pub state: SharedState,
-    pub cableway: Client
+    pub cableway: Client,
+    pub db: DatabaseConnection
 }
 
 #[derive(Debug)]
 pub struct AppState {
-    pub db: sea_orm::DatabaseConnection,
-    pub jwt_key: Hmac<Sha256>,
-    pub argon: Argon2<'static>
 }
 
 impl AppState {
-    pub fn new_filling_env_defaults(db: sea_orm::DatabaseConnection) -> Self {
-        AppState {
-            db,
-            jwt_key: Self::from_env_jwt_key(),
-            argon: Argon2::default()
-        }
-    }
-
-    pub fn from_env_jwt_key() -> Hmac<Sha256> {
-        let jwt_key: String = get_required_env("JWT_KEY");
-
-        Hmac::<Sha256>::new_from_slice(jwt_key.as_bytes())
-            .expect("Failed to create HMAC")
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
@@ -51,7 +39,9 @@ pub struct AppConfig {
     pub db_password: String,
     pub db_host: String,
     pub db_port: u16,
-    pub argon_salt: SaltString
+    pub argon_salt: SaltString,
+    pub jwt_key: Hmac<Sha256>,
+    pub argon2: Argon2<'static>
 }
 
 impl AppConfig {
@@ -71,6 +61,10 @@ impl AppConfig {
         let argon_salt_str: String = get_required_env("ARGON_SALT");
         let argon_salt = SaltString::from_b64(&argon_salt_str)
             .expect("Failed to create Argon2 salt from environment variable");
+        
+        let jwt_secret: String = get_required_env("JWT_SECRET");
+        let jwt_key = Hmac::<Sha256>::new_from_slice(jwt_secret.as_bytes())
+            .expect("Failed to create JWT key from environment variable");
 
         AppConfig {
             rest_addr: SocketAddr::new(rest_host, rest_port),
@@ -80,7 +74,9 @@ impl AppConfig {
             db_password,
             db_host,
             db_port,
-            argon_salt
+            argon_salt,
+            jwt_key,
+            argon2: Argon2::default()
         }
     }
 }

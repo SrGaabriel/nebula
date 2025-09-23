@@ -32,8 +32,9 @@ pub async fn authorize(
     }
 
     let user = {
-        let state = app.state.read().await;
-        let claims: Result<BTreeMap<String, String>, jwt::error::Error> = token.unwrap().verify_with_key(&state.jwt_key);
+        let claims: Result<BTreeMap<String, String>, jwt::error::Error> = token
+            .unwrap()
+            .verify_with_key(&app.config.jwt_key);
         if claims.is_err() {
             return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
         }
@@ -49,7 +50,7 @@ pub async fn authorize(
         }
 
         users::Entity::find_by_id(user_id.unwrap())
-            .one(&state.db)
+            .one(&app.db)
             .await
     };
     if user.is_err() {

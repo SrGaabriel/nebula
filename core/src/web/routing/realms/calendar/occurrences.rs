@@ -20,7 +20,7 @@ pub async fn get_occurrences(
     State(app): State<NebulaApp>,
     Query(query): Query<OccurrenceQuery>
 ) -> NebulaResponse<RealmEventOccurrenceList> {
-    let db = &app.state.read().await.db;
+    let db = &app.db;
     let events = realm_events::Entity::find()
         .filter(realm_events::Column::RealmId.eq(realm_id))
         .filter(realm_events::Column::StartTime.gte(query.start))
