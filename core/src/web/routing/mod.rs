@@ -1,5 +1,5 @@
 use crate::app::NebulaApp;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{middleware, Router};
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
@@ -22,7 +22,11 @@ pub fn router(app: NebulaApp) -> Router {
         )
         .route("/api/realms/{realm_id}/calendar/events",
                post(realms::calendar::events::create_event)
-                   .layer(realm_membership!(app, [Write]))
+                   .layer(realm_membership!(app, [ManageEvents]))
+        )
+        .route("/api/realms/{realm_id}/calendar/events/{event_id}",
+               delete(realms::calendar::events::delete_event)
+                   .layer(realm_membership!(app, [ManageEvents]))
         )
         .route("/api/realms/{realm_id}/calendar/schedule",
                get(realms::calendar::occurrences::get_occurrences)

@@ -184,12 +184,6 @@ async fn test_complete_flow() {
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default subscriber failed");
 
-    let _output = std::process::Command::new("py")
-        .arg("migrate.py")
-        .arg("fresh")
-        .output()
-        .expect("Failed to run migration");
-
     task::spawn(async move {
         nebula_core::run_server().await;
     });

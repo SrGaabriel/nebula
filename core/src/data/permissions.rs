@@ -88,9 +88,7 @@ pub struct RealmPermissions(i16);
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RealmPermission {
-    Read  = 0b0001,
-    Write = 0b0010,
-    Admin = 0b0100,
+    ManageEvents  = 0b0001,
 }
 
 impl BitwisePermissions for RealmPermissions {
@@ -108,24 +106,6 @@ impl BitwisePermissions for RealmPermissions {
 
 impl RealmPermissions {
     #[inline] pub const fn new(value: i16) -> Self { Self(value) }
-
-    #[inline] pub const fn read() -> Self { Self(RealmPermission::Read as i16) }
-    #[inline] pub const fn write() -> Self { Self(RealmPermission::Write as i16) }
-    #[inline] pub const fn admin() -> Self { Self(RealmPermission::Admin as i16) }
-
-    #[inline] pub fn can_read(&self) -> bool { <Self as BitwisePermissions>::contains(self, RealmPermission::Read) }
-    #[inline] pub fn can_write(&self) -> bool { <Self as BitwisePermissions>::contains(self, RealmPermission::Write) }
-    #[inline] pub fn is_admin(&self) -> bool { <Self as BitwisePermissions>::contains(self, RealmPermission::Admin) }
-
-    #[inline]
-    pub fn to_array(self) -> ([Option<RealmPermission>; 3], usize) {
-        let mut arr = [None, None, None];
-        let mut len = 0;
-        if self.can_read()  { arr[len] = Some(RealmPermission::Read);  len += 1; }
-        if self.can_write() { arr[len] = Some(RealmPermission::Write); len += 1; }
-        if self.is_admin()  { arr[len] = Some(RealmPermission::Admin); len += 1; }
-        (arr, len)
-    }
 
     #[inline]
     pub fn from_slice(perms: &[RealmPermission]) -> Self {

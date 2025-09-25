@@ -3,14 +3,14 @@ use axum::extract::{Path, State};
 use chrono::{DateTime, Utc};
 use sea_orm::{EntityTrait, Set};
 use crate::app::NebulaApp;
-use crate::cableway::events::calendar::send_event_created;
+use crate::cableway::events::calendar::{send_event_created, send_event_deleted};
 use crate::data::calendar::RecurrenceRule;
 use crate::data::snowflake::Snowflake;
 use crate::schema::users;
 use crate::schema::realm_events;
 use crate::service::snowflake::next_snowflake;
 use crate::web::routing::dto::RealmEventDto;
-use crate::web::routing::error::{error, ok, NebulaResponse};
+use crate::web::routing::error::{error, no_content, ok, NebulaResponse};
 use crate::web::routing::realms::calendar::RealmEventObject;
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
@@ -82,4 +82,39 @@ pub async fn create_event(
     ok(RealmEventObject {
         event: dto
     })
+}
+
+pub async fn delete_event(
+    Path((realm_id, event_id)): Path<(Snowflake, Snowflake)>,
+    Extension(_user): Extension<users::Model>,
+    State(app): State<NebulaApp>
+) -> NebulaResponse<()> {
+    let db = &app.db;
+    let event = realm_events::Entity::find_by_id(event_id)
+        .one(db)
+        .await
+        .expect("Failed to query event");
+
+    if event.is_none() {
+        return error(axum::http::StatusCode::NOT_FOUND, "Event not found");
+    }
+
+    let event = event.unwrap();
+    if event.realm_id != realm_id {
+        return error(axum::http::StatusCode::BAD_REQUEST, "Event does not belong to the specified realm");
+    }
+
+    send_event_deleted(
+        &app.cableway,
+        event_id,
+    )
+        .await
+        .expect("Failed to send event deleted");
+
+    realm_events::Entity::delete_by_id(event_id)
+        .exec(db)
+        .await
+        .expect("Failed to delete event");
+
+    no_content()
 }

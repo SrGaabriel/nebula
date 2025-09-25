@@ -21,9 +21,6 @@ pub async fn run_server() {
     ));
 
     let cableway_client = cableway::connect(&config).await;
-    cableway_client.publish("internal.status", "Testing!".into()).await.unwrap();
-    cableway_client.flush().await.unwrap();
-
     let app = NebulaApp {
         config,
         cableway: cableway_client,

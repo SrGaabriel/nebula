@@ -34,14 +34,11 @@ pub type SharedState = Arc<RwLock<AppState>>;
 pub struct AppConfig {
     pub rest_addr: SocketAddr,
     pub cableway_addr: SocketAddr,
-    pub db_name: String,
-    pub db_user: String,
-    pub db_password: String,
-    pub db_host: String,
-    pub db_port: u16,
+    pub db_url: String,
+    pub db_fresh: bool,
     pub argon_salt: SaltString,
     pub jwt_key: Hmac<Sha256>,
-    pub argon2: Argon2<'static>
+    pub argon2: Argon2<'static>,
 }
 
 impl AppConfig {
@@ -52,11 +49,7 @@ impl AppConfig {
         let cableway_host: IpAddr = get_required_env("CABLEWAY_HOST");
         let cableway_port: u16 = get_required_env("CABLEWAY_PORT");
 
-        let db_name: String = get_required_env("DB_NAME");
-        let db_user: String = get_required_env("DB_USER");
-        let db_password: String = get_required_env("DB_PASSWORD");
-        let db_host: String = get_required_env("DB_HOST");
-        let db_port: u16 = get_required_env("DB_PORT");
+        let db_url: String = get_required_env("DATABASE_URL");
 
         let argon_salt_str: String = get_required_env("ARGON_SALT");
         let argon_salt = SaltString::from_b64(&argon_salt_str)
@@ -66,17 +59,18 @@ impl AppConfig {
         let jwt_key = Hmac::<Sha256>::new_from_slice(jwt_secret.as_bytes())
             .expect("Failed to create JWT key from environment variable");
 
+        let db_fresh = std::env::var("DATABASE_REFRESH")
+            .unwrap_or_else(|_| "false".to_string())
+            .to_lowercase() == "true";
+
         AppConfig {
             rest_addr: SocketAddr::new(rest_host, rest_port),
             cableway_addr: SocketAddr::new(cableway_host, cableway_port),
-            db_name,
-            db_user,
-            db_password,
-            db_host,
-            db_port,
+            db_url,
+            db_fresh,
             argon_salt,
             jwt_key,
-            argon2: Argon2::default()
+            argon2: Argon2::default(),
         }
     }
 }

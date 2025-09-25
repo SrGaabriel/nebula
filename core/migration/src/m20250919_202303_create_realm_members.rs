@@ -33,34 +33,27 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default(0),
                     )
+                    .foreign_key(
+                        &mut ForeignKey::create()
+                            .name("fk_realm_members_realm_id")
+                            .from(RealmMembers::Table, RealmMembers::RealmId)
+                            .to(Realms::Table, Realms::Id)
+                            .on_delete(ForeignKeyAction::Cascade)
+                            .on_update(ForeignKeyAction::NoAction)
+                            .to_owned(),
+                    ).to_owned()
+                    .foreign_key(
+                        &mut ForeignKey::create()
+                            .name("fk_realm_members_user_id")
+                            .from(RealmMembers::Table, RealmMembers::UserId)
+                            .to(Users::Table, Users::Id)
+                            .on_delete(ForeignKeyAction::Cascade)
+                            .on_update(ForeignKeyAction::NoAction)
+                            .to_owned(),
+                    )
                     .to_owned(),
             )
             .await?;
-
-        manager
-            .create_foreign_key(
-                ForeignKey::create()
-                    .name("fk_realm_members_realm_id")
-                    .from(RealmMembers::Table, RealmMembers::RealmId)
-                    .to(Realms::Table, Realms::Id)
-                    .on_delete(ForeignKeyAction::Cascade)
-                    .on_update(ForeignKeyAction::NoAction)
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .create_foreign_key(
-                ForeignKey::create()
-                    .name("fk_realm_members_user_id")
-                    .from(RealmMembers::Table, RealmMembers::UserId)
-                    .to(Users::Table, Users::Id)
-                    .on_delete(ForeignKeyAction::Cascade)
-                    .on_update(ForeignKeyAction::NoAction)
-                    .to_owned(),
-            )
-            .await?;
-
         manager
             .create_index(
                 Index::create()
