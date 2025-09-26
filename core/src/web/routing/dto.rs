@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::data::calendar::RecurrenceRule;
 use crate::data::snowflake::Snowflake;
-use crate::schema::users;
+use crate::schema::{realm_tasks, users};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct UserDto {
@@ -75,4 +75,42 @@ pub struct RealmEventOccurrenceDto {
 pub struct RealmEventOccurrenceList {
     pub events: Vec<RealmEventDto>,
     pub occurrences: Vec<RealmEventOccurrenceDto>
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TaskDto {
+    pub id: Snowflake,
+    pub title: String,
+    pub description: Option<String>,
+    pub created_by: Snowflake,
+    pub realm_id: Snowflake,
+    pub priority: Option<u8>,
+    pub due_date: Option<chrono::DateTime<chrono::Utc>>,
+    pub start_date: Option<chrono::DateTime<chrono::Utc>>,
+    pub planned_for: Option<chrono::DateTime<chrono::Utc>>,
+    pub completed: bool,
+}
+
+impl TaskDto {
+    pub fn from_model(model: realm_tasks::Model) -> Self {
+        let priority = match model.priority {
+            Some(realm_tasks::Priority::Discardable) => Some(0),
+            Some(realm_tasks::Priority::Desirable) => Some(1),
+            Some(realm_tasks::Priority::Important) => Some(2),
+            None => None
+        };
+
+        Self {
+            id: model.id,
+            title: model.title,
+            description: model.description,
+            created_by: model.author_id,
+            realm_id: model.realm_id,
+            priority,
+            due_date: model.due_date,
+            start_date: model.start_date,
+            planned_for: model.planned_for,
+            completed: model.completed
+        }
+    }
 }

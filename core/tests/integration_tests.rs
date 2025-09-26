@@ -9,11 +9,12 @@ use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 use nebula_core::data::calendar::RecurrenceRule;
 use nebula_core::web::routing::auth::{AuthResponse, signup::SignupRequest};
-use nebula_core::web::routing::dto::{RealmDto, RealmEventDto, RealmEventOccurrenceList, UserDto};
+use nebula_core::web::routing::dto::{RealmDto, RealmEventDto, RealmEventOccurrenceList, TaskDto, UserDto};
 use nebula_core::web::routing::realms::{RealmObject, create::CreateRealmPayload};
 use nebula_core::web::routing::realms::calendar::events::CreateEventRequest;
 use nebula_core::web::routing::realms::calendar::occurrences::OccurrenceQuery;
 use nebula_core::web::routing::realms::calendar::RealmEventObject;
+use nebula_core::web::routing::realms::task::{CreateTaskRequest, TaskObject};
 use nebula_core::web::routing::users::UserObject;
 
 #[derive(Default)]
@@ -109,6 +110,26 @@ impl TestContext {
             ).await
     }
 
+    async fn create_task(&self) -> TaskDto {
+        let realm_id = self.realm_response.as_ref().unwrap().id;
+        let task = CreateTaskRequest {
+            title: "Finish Integration Tests".to_string(),
+            description: Some("Write and verify integration tests for the API".to_string()),
+            due_date: None,
+            start_date: None,
+            planned_for: None,
+            priority: Some(2),
+            completed: false
+        };
+        self
+            .authorized_pst::<CreateTaskRequest, TaskObject>(
+                Method::POST,
+                &format!("api/realms/{}/tasks", realm_id),
+                &task
+            ).await
+            .task
+    }
+
     async fn authorized_pst<T: serde::Serialize, R: DeserializeOwned>(&self, method: Method, endpoint: &str, body: &T) -> R {
         let response = self
             .authorized_snd(method, endpoint, body)
@@ -187,6 +208,7 @@ async fn test_complete_flow() {
     task::spawn(async move {
         nebula_core::run_server().await;
     });
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
     let base_url = get_api_base_url();
     let mut context = TestContext::new(base_url);
@@ -218,6 +240,12 @@ async fn test_complete_flow() {
     assert!(!schedule.occurrences.is_empty());
     assert_eq!(schedule.occurrences.len(), 12);
     println!("Fetched realm schedule: {:?}", schedule);
+
+    let created_task = context.create_task().await;
+    println!("Created task: {:?}", created_task);
+    assert_eq!(created_task.title, "Finish Integration Tests");
+    assert_eq!(created_task.priority, Some(2));
+    assert!(!created_task.completed);
 
     println!("Test complete flow succeeded");
 }

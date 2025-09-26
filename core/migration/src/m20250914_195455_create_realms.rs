@@ -42,7 +42,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum Realms {
+pub enum Realms {
     Table,
     Id,
     Name,

@@ -1,4 +1,6 @@
 use sea_orm_migration::{prelude::*, schema::*};
+use crate::m20250914_040704_create_users::Users;
+use crate::m20250914_195455_create_realms::Realms;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -158,16 +160,4 @@ enum RealmEvents {
     StartTime,
     EndTime,
     Recurrence,
-}
-
-#[derive(DeriveIden)]
-enum Users {
-    Table,
-    Id,
-}
-
-#[derive(DeriveIden)]
-enum Realms {
-    Table,
-    Id,
 }

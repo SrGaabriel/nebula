@@ -1,21 +1,26 @@
 use argon2::PasswordHasher;
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{extract::State, http::StatusCode};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
+use migration::m20250914_040704_create_users::MAX_NAME_LENGTH;
 
 use crate::web::routing::auth::{generate_jwt_token, AuthResponse};
 use crate::web::routing::dto::UserDto;
 use crate::{app::NebulaApp, schema::users, service::snowflake::next_snowflake, web::routing::error::{error, ok, NebulaResponse}};
+use crate::web::routing::middlewares::validation::ValidJson;
 
-#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize, garde::Validate)]
 pub struct SignupRequest {
+    #[garde(length(min = 8, max = MAX_NAME_LENGTH))]
     pub name: String,
+    #[garde(email)]
     pub email: String,
+    #[garde(length(min = 8, max = 128))]
     pub password: String
 }
 
 pub async fn signup_handler(
     State(app): State<NebulaApp>,
-    Json(payload): Json<SignupRequest>
+    ValidJson(payload): ValidJson<SignupRequest>
 ) -> NebulaResponse<AuthResponse> {
     let db = &app.db;
     let user_with_same_email = users::Entity::find()

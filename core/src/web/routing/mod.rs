@@ -32,6 +32,10 @@ pub fn router(app: NebulaApp) -> Router {
                get(realms::calendar::occurrences::get_occurrences)
                    .layer(realm_membership!(app))
         )
+        .route("/api/realms/{realm_id}/tasks",
+               post(realms::task::create_task)
+                   .layer(realm_membership!(app, [ManageTasks]))
+        )
         .route("/api/realms", post(realms::create::create_realm))
         .route_layer(middleware::from_fn_with_state(app.clone(), middlewares::auth::authorize))
         .route("/api/login", post(auth::login::login_handler))

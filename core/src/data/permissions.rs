@@ -89,6 +89,7 @@ pub struct RealmPermissions(i16);
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RealmPermission {
     ManageEvents  = 0b0001,
+    ManageTasks   = 0b0010,
 }
 
 impl BitwisePermissions for RealmPermissions {
