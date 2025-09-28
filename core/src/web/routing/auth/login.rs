@@ -1,25 +1,28 @@
-use argon2::{PasswordHash, PasswordVerifier};
-use sea_orm::ColumnTrait;
-use sea_orm::QueryFilter;
+use super::{MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH};
 use crate::app::NebulaApp;
-use axum::extract::State;
-use axum::http::StatusCode;
-use axum::Json;
-use sea_orm::EntityTrait;
 use crate::schema::users;
 use crate::web::routing::auth::{generate_jwt_token, AuthResponse};
-use crate::web::routing::error::{error, ok};
 use crate::web::routing::error::NebulaResponse;
+use crate::web::routing::error::{error, ok};
+use crate::web::routing::middlewares::validation::ValidJson;
+use argon2::{PasswordHash, PasswordVerifier};
+use axum::extract::State;
+use axum::http::StatusCode;
+use sea_orm::ColumnTrait;
+use sea_orm::EntityTrait;
+use sea_orm::QueryFilter;
 
-#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize, garde::Validate)]
 pub struct LoginRequest {
+    #[garde(email)]
     pub email: String,
+    #[garde(length(min = MIN_PASSWORD_LENGTH, max = MAX_PASSWORD_LENGTH))]
     pub password: String,
 }
 
 pub async fn login_handler(
     State(app): State<NebulaApp>,
-    Json(payload): Json<LoginRequest>
+    ValidJson(payload): ValidJson<LoginRequest>
 ) -> NebulaResponse<AuthResponse> {
     let user = users::Entity::find()
         .filter(users::Column::Email.eq(payload.email.clone()))

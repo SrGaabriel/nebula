@@ -10,6 +10,7 @@ pub mod cableway;
 pub mod database;
 pub mod service;
 pub mod data;
+pub mod util;
 
 pub async fn run_server() {
     dotenv().ok().expect("Couldn't parse .env");
@@ -30,3 +31,4 @@ pub async fn run_server() {
 
     web::serve(app).await
 }
+

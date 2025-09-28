@@ -1,3 +1,4 @@
+use crate::util::validation::is_sane;
 use axum::Extension;
 use axum::extract::State;
 use sea_orm::{ActiveModelTrait, EntityTrait, Set, QueryFilter, ColumnTrait};
@@ -7,19 +8,22 @@ use crate::schema::{realm_members, realms, users};
 use crate::service::snowflake::next_snowflake;
 use crate::web::routing::dto::RealmDto;
 use crate::web::routing::error::{error, ok, NebulaResponse};
+use crate::web::routing::middlewares::validation::ValidJson;
 use crate::web::routing::realms::RealmObject;
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, garde::Validate)]
 pub struct CreateRealmPayload {
+    #[garde(length(min = 3, max = 48), custom(is_sane))]
     pub name: String,
     #[serde(default)]
+    #[garde(length(max = 1024), inner(custom(is_sane)))]
     pub description: Option<String>,
 }
 
 pub async fn create_realm(
     State(app): State<NebulaApp>,
     Extension(user): Extension<users::Model>,
-    axum::Json(payload): axum::Json<CreateRealmPayload>
+    ValidJson(payload): ValidJson<CreateRealmPayload>
 ) -> NebulaResponse<RealmObject> {
     let db = &app.db;
     let existing_realm = realms::Entity::find()

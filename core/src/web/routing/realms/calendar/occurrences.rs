@@ -1,24 +1,28 @@
 use crate::app::NebulaApp;
-use crate::data::calendar::RecurrenceRule;
 use crate::data::snowflake::Snowflake;
 use crate::schema::realm_events;
 use crate::web::routing::dto::RealmEventDto;
 use crate::web::routing::dto::RealmEventOccurrenceDto;
 use crate::web::routing::dto::RealmEventOccurrenceList;
 use crate::web::routing::error::{ok, NebulaResponse};
-use axum::extract::{Path, Query, State};
+use crate::web::routing::middlewares::validation::ValidQuery;
+use axum::extract::{Path, State};
+use rrule::{RRule, Tz};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use std::str::FromStr;
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, garde::Validate)]
 pub struct OccurrenceQuery {
+    #[garde(skip)] // todo: implement garde datetime validation
     pub start: chrono::DateTime<chrono::Utc>,
+    #[garde(skip)]
     pub end: chrono::DateTime<chrono::Utc>,
 }
 
 pub async fn get_occurrences(
     Path(realm_id): Path<Snowflake>,
     State(app): State<NebulaApp>,
-    Query(query): Query<OccurrenceQuery>
+    ValidQuery(query): ValidQuery<OccurrenceQuery>
 ) -> NebulaResponse<RealmEventOccurrenceList> {
     let db = &app.db;
     let events = realm_events::Entity::find()
@@ -37,12 +41,24 @@ pub async fn get_occurrences(
         event_dtos.push(event_dto.clone());
 
         let recurrence_rule = match event.recurrence {
-            Some(encoded) => RecurrenceRule::from_u64(encoded as u64).ok(),
+            Some(encoded) => RRule::from_str(&encoded).ok(),
             None => None,
         };
-        let occurrences = match &recurrence_rule {
-            Some(rule) =>
-                rule.generate_occurrences(event.start_time, query.start, query.end, None),
+        let occurrences = match recurrence_rule {
+            Some(rule) => {
+                let start_utc = event.start_time.with_timezone(&Tz::UTC);
+                let end_utc = query.end.with_timezone(&Tz::UTC);
+                rule
+                    .build(start_utc)
+                    .expect("Error building recurrence rule")
+                    .before(end_utc)
+                    .after(start_utc)
+                    .all(1000)
+                    .dates
+                    .into_iter()
+                    .map(|dt| dt.with_timezone(&chrono::Utc))
+                    .collect()
+            },
             None => {
                 if event.start_time >= query.start && event.start_time <= query.end {
                     vec![event.start_time]

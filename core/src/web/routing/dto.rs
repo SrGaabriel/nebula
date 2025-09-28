@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use crate::data::calendar::RecurrenceRule;
 use crate::data::snowflake::Snowflake;
 use crate::schema::{realm_tasks, users};
+use rrule::{RRule, Unvalidated};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct UserDto {
@@ -22,6 +22,7 @@ impl UserDto {
 pub struct RealmDto {
     pub id: Snowflake,
     pub name: String,
+    pub description: Option<String>,
     pub owner_id: Snowflake
 }
 
@@ -30,6 +31,7 @@ impl RealmDto {
         RealmDto {
             id: model.id,
             name: model.name.clone(),
+            description: model.description.clone(),
             owner_id: model.owner_id
         }
     }
@@ -45,7 +47,7 @@ pub struct RealmEventDto {
     pub realm_id: Snowflake,
     pub start_time: chrono::DateTime<chrono::Utc>,
     pub end_time: Option<chrono::DateTime<chrono::Utc>>,
-    pub recurrence: Option<RecurrenceRule>
+    pub recurrence: Option<RRule<Unvalidated>>
 }
 
 impl RealmEventDto {
@@ -59,7 +61,7 @@ impl RealmEventDto {
             realm_id: model.realm_id,
             start_time: model.start_time,
             end_time: model.end_time,
-            recurrence: model.recurrence.map(|r| RecurrenceRule::from_u64(r as u64)).transpose().unwrap_or(None)
+            recurrence: model.recurrence.as_ref().map(|r| r.parse().unwrap())
         }
     }
 }

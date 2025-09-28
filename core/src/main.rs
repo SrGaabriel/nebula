@@ -5,6 +5,7 @@ pub mod cableway;
 pub mod database;
 pub mod service;
 pub mod data;
+pub mod util;
 
 use nebula_core::run_server;
 

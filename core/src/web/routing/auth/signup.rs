@@ -1,8 +1,9 @@
+use crate::util::validation::is_sane;
 use argon2::PasswordHasher;
 use axum::{extract::State, http::StatusCode};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
-use migration::m20250914_040704_create_users::MAX_NAME_LENGTH;
 
+use super::{MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH};
 use crate::web::routing::auth::{generate_jwt_token, AuthResponse};
 use crate::web::routing::dto::UserDto;
 use crate::{app::NebulaApp, schema::users, service::snowflake::next_snowflake, web::routing::error::{error, ok, NebulaResponse}};
@@ -10,11 +11,11 @@ use crate::web::routing::middlewares::validation::ValidJson;
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize, garde::Validate)]
 pub struct SignupRequest {
-    #[garde(length(min = 8, max = MAX_NAME_LENGTH))]
+    #[garde(length(min = 8, max = 50), custom(is_sane))]
     pub name: String,
     #[garde(email)]
     pub email: String,
-    #[garde(length(min = 8, max = 128))]
+    #[garde(length(min = MIN_PASSWORD_LENGTH, max = MAX_PASSWORD_LENGTH), custom(is_sane))]
     pub password: String
 }
 

@@ -1,7 +1,5 @@
 use sea_orm_migration::prelude::*;
 
-pub const MAX_NAME_LENGTH: usize = 50;
-
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
@@ -19,8 +17,8 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(Users::Name).string_len(MAX_NAME_LENGTH as u32).not_null())
-                    .col(ColumnDef::new(Users::Email).string_len(255).not_null().unique_key())
+                    .col(ColumnDef::new(Users::Name).string().not_null())
+                    .col(ColumnDef::new(Users::Email).string().not_null().unique_key())
                     .col(ColumnDef::new(Users::PasswordHash).string().not_null())
                     .col(
                         ColumnDef::new(Users::UpdatedAt)

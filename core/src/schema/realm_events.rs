@@ -18,7 +18,7 @@ pub struct Model {
     pub realm_id: Snowflake,
     pub start_time: DateTime<Utc>,
     pub end_time: Option<DateTime<Utc>>,
-    pub recurrence: Option<i64>
+    pub recurrence: Option<String>
 }
 
 #[derive(Clone, Debug, PartialEq, EnumIter, DeriveRelation)]

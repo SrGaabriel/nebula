@@ -7,6 +7,8 @@ use crate::web::routing::dto::UserDto;
 pub mod login;
 pub mod signup;
 
+pub const MIN_PASSWORD_LENGTH: usize = 8;
+pub const MAX_PASSWORD_LENGTH: usize = 128;
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct AuthResponse {

@@ -1,48 +1,44 @@
-use axum::{Extension, Json};
-use axum::extract::{Path, State};
-use chrono::{DateTime, Utc};
-use sea_orm::{EntityTrait, Set};
 use crate::app::NebulaApp;
 use crate::cableway::events::calendar::{send_event_created, send_event_deleted};
-use crate::data::calendar::RecurrenceRule;
 use crate::data::snowflake::Snowflake;
-use crate::schema::users;
 use crate::schema::realm_events;
+use crate::schema::users;
 use crate::service::snowflake::next_snowflake;
+use crate::util::validation::is_sane;
 use crate::web::routing::dto::RealmEventDto;
 use crate::web::routing::error::{error, no_content, ok, NebulaResponse};
+use crate::web::routing::middlewares::validation::ValidJson;
 use crate::web::routing::realms::calendar::RealmEventObject;
+use axum::extract::{Path, State};
+use axum::Extension;
+use chrono::{DateTime, Utc};
+use rrule::{RRule, Unvalidated};
+use sea_orm::{EntityTrait, Set};
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, garde::Validate)]
 pub struct CreateEventRequest {
+    #[garde(length(min = 2, max = 48), custom(is_sane))]
     pub name: String,
+    #[garde(length(max = 4096), inner(custom(is_sane)))]
     pub description: Option<String>,
+    #[garde(length(max = 4096), inner(custom(is_sane)))]
     pub location: Option<String>,
+    #[garde(skip)]
     pub start_time: DateTime<Utc>,
+    #[garde(skip)]
     pub end_time: Option<DateTime<Utc>>,
-    pub recurrence: Option<RecurrenceRule>
+    #[garde(skip)]
+    pub recurrence: Option<RRule<Unvalidated>>
 }
 
 pub async fn create_event(
     Path(realm_id): Path<Snowflake>,
     Extension(user): Extension<users::Model>,
     State(app): State<NebulaApp>,
-    Json(payload): Json<CreateEventRequest>
+    ValidJson(payload): ValidJson<CreateEventRequest>
 ) -> NebulaResponse<RealmEventObject> {
     let db = &app.db;
-    let encoded_recurrence = match &payload.recurrence {
-        Some(rule) => {
-            let encoded = rule.to_u64();
-            if encoded.is_err() {
-                return error(
-                    axum::http::StatusCode::BAD_REQUEST,
-                    "Invalid recurrence rule (too big?)"
-                );
-            }
-            Some(encoded.unwrap() as i64)
-        }
-        None => None
-    };
+    let encoded_recurrence = payload.recurrence.as_ref().map(|r| r.to_string());
 
     let snowflake = next_snowflake();
     let event = realm_events::ActiveModel {
@@ -69,7 +65,7 @@ pub async fn create_event(
         realm_id,
         start_time: payload.start_time,
         end_time: payload.end_time,
-        recurrence: payload.recurrence.clone()
+        recurrence: payload.recurrence
     };
 
     send_event_created(
