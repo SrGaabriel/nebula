@@ -1,13 +1,10 @@
-use std::collections::BTreeMap;
+use crate::app::NebulaApp;
+use crate::service;
+use crate::web::routing::error::error;
 use axum::extract::{Request, State};
 use axum::http::StatusCode;
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
-use jwt::VerifyWithKey;
-use crate::app::{NebulaApp};
-use crate::web::routing::error::error;
-use crate::schema::users;
-use sea_orm::EntityTrait;
 
 pub async fn authorize(
     State(app): State<NebulaApp>,
@@ -31,36 +28,16 @@ pub async fn authorize(
         return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
     }
 
-    let user = {
-        let claims: Result<BTreeMap<String, String>, jwt::error::Error> = token
-            .unwrap()
-            .verify_with_key(&app.config.jwt_key);
-        if claims.is_err() {
-            return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
-        }
-        let claims = claims.unwrap();
-
-        let user_id_str: Option<&String> = claims.get("user_id");
-        if user_id_str.is_none() {
-            return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
-        }
-        let user_id = user_id_str.unwrap().parse::<u64>();
-        if user_id.is_err() {
-            return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token claim").into_response();
-        }
-
-        users::Entity::find_by_id(user_id.unwrap())
-            .one(&app.db)
-            .await
-    };
-    if user.is_err() {
-        return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
+    let user_result = service::auth::authenticate(
+        &app.config,
+        &app.db,
+        token.unwrap().to_string()
+    ).await;
+    match user_result {
+        Ok(user) => {
+            req.extensions_mut().insert(user);
+            next.run(req).await
+        },
+        Err(_) => error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response()
     }
-    let user = user.unwrap();
-    if user.is_none() {
-        return error::<String>(StatusCode::UNAUTHORIZED, "Invalid token").into_response();
-    }
-
-    req.extensions_mut().insert(user.unwrap());
-    next.run(req).await
 }

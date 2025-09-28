@@ -6,8 +6,12 @@
       <sourceFolder url="file://$MODULE_DIR$/core/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/migration/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/core/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/integration/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/migration/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/server/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/core/target" />
       <excludeFolder url="file://$MODULE_DIR$/migration/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/migration/target" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
   </component>

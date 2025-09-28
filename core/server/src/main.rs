@@ -22,7 +22,7 @@ pub async fn main() {
         AppState::new()
     ));
 
-    let cableway_client = cableway::connect(&config).await;
+    let cableway_client = cableway::start(&config, &db).await;
     let app = NebulaApp {
         config,
         cableway: cableway_client,

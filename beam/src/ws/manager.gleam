@@ -72,7 +72,6 @@ fn start_subscription_with_retry(
   retry_count: Int,
 ) -> Nil {
   let subject_ref = process.new_subject()
-
   case glats.subscribe(conn, subject_ref, config.subject, []) {
     Ok(_sid) -> {
       io.println("✅ Subscribed to: " <> config.subject)
@@ -156,4 +155,8 @@ pub fn quick_subscribe(
   let handles = start_managed_subscriptions(conn, [config])
   let assert [handle] = handles
   handle
+}
+
+pub fn close_subscription(handle: SubscriptionHandle) -> Nil {
+  process.kill(handle.pid)
 }
