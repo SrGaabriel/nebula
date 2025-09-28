@@ -1,12 +1,12 @@
-use nebula_core::web::routing::auth::signup::SignupRequest;
-use nebula_core::web::routing::auth::AuthResponse;
-use nebula_core::web::routing::dto::{RealmDto, RealmEventDto, TaskDto, UserDto};
-use nebula_core::web::routing::realms::calendar::events::CreateEventRequest;
-use nebula_core::web::routing::realms::calendar::RealmEventObject;
-use nebula_core::web::routing::realms::create::CreateRealmPayload;
-use nebula_core::web::routing::realms::task::{CreateTaskRequest, TaskObject};
-use nebula_core::web::routing::realms::RealmObject;
-use nebula_core::web::routing::users::UserObject;
+use nebula_server::web::routing::auth::signup::SignupRequest;
+use nebula_server::web::routing::auth::AuthResponse;
+use nebula_server::web::routing::dto::{RealmDto, RealmEventDto, TaskDto, UserDto};
+use nebula_server::web::routing::realms::calendar::events::CreateEventRequest;
+use nebula_server::web::routing::realms::calendar::RealmEventObject;
+use nebula_server::web::routing::realms::create::CreateRealmPayload;
+use nebula_server::web::routing::realms::task::{CreateTaskRequest, TaskObject};
+use nebula_server::web::routing::realms::RealmObject;
+use nebula_server::web::routing::users::UserObject;
 use reqwest::{Client, Method, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, RequestBuilder};
 use serde::de::DeserializeOwned;
@@ -66,7 +66,7 @@ impl TestClient {
         event_obj.event
     }
 
-    pub async fn get_realm_schedule<P: Serialize>(&self, realm_id: u64, query: &P) -> nebula_core::web::routing::dto::RealmEventOccurrenceList {
+    pub async fn get_realm_schedule<P: Serialize>(&self, realm_id: u64, query: &P) -> nebula_server::web::routing::dto::RealmEventOccurrenceList {
         self.get_with_query(&format!("api/realms/{}/calendar/schedule", realm_id), query).await
     }
 

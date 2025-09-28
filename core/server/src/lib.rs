@@ -6,10 +6,3 @@ pub mod database;
 pub mod service;
 pub mod data;
 pub mod util;
-
-use nebula_core::run_server;
-
-#[tokio::main]
-pub async fn main() {
-    run_server().await
-}

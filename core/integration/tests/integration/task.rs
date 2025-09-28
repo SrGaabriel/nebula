@@ -1,4 +1,4 @@
-use nebula_core::web::routing::realms::task::CreateTaskRequest;
+use nebula_server::web::routing::realms::task::CreateTaskRequest;
 use crate::test_with_realm;
 
 test_with_realm!(test_task_creation, |ctx, realm| {

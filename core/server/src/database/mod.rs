@@ -7,7 +7,9 @@ pub async fn connect(config: &AppConfig) -> DatabaseConnection {
         .await
         .expect("Failed to connect to the database");
     if config.db_fresh {
-        Migrator::fresh(&db).await.unwrap();
+        Migrator::up(&db, None)
+            .await
+            .expect("Failed to run database migrations");
     }
     db
 }

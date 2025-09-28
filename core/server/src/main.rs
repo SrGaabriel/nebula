@@ -12,7 +12,8 @@ pub mod service;
 pub mod data;
 pub mod util;
 
-pub async fn run_server() {
+#[tokio::main]
+pub async fn main() {
     dotenv().ok().expect("Couldn't parse .env");
     let config = AppConfig::from_env();
     let db = database::connect(&config).await;
