@@ -29,7 +29,7 @@ pub async fn authorize_membership_with_permissions(
     if realm.is_none() {
         return axum::response::Response::builder()
             .status(axum::http::StatusCode::NOT_FOUND)
-            .body(Body::empty())
+            .body(Body::from("Realm not found"))
             .expect("Realm was not found")
     }
 

@@ -19,15 +19,22 @@ pub struct TestClient {
 }
 
 impl TestClient {
-    pub async fn new() -> Self {
+    pub fn with_token(token: &str) -> Self {
         let port = std::env::var("REST_PORT")
             .expect("REST_PORT environment variable not set");
         let base_url = format!("http://localhost:{port}");
         let client = ClientBuilder::new(Client::new()).build();
+        Self { client, base_url, token: token.to_owned() }
+    }
 
+    pub async fn login() -> Self {
+        let port = std::env::var("REST_PORT")
+            .expect("REST_PORT environment variable not set");
+        let base_url = format!("http://localhost:{port}");
+        let client = ClientBuilder::new(Client::new()).build();
         let token = login(&client, &base_url).await;
 
-        Self { client, base_url, token }
+        Self::with_token(&token)
     }
 
     pub async fn create_test_realm(&self) -> RealmDto {

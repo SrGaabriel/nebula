@@ -3,9 +3,11 @@
     let token: string = '';
     let realm_id: string = '';
     let webSocket: WebSocket;
+    let messages: HTMLUListElement;
 
     function connectToWebSocket() {
         webSocket = new WebSocket('ws://localhost:3030/ws?token=' + token);
+        messages = document.getElementById('messages') as HTMLUListElement;
 
         webSocket.addEventListener('open', (event) => {
             console.log('WebSocket connection established with token:', token);
@@ -21,6 +23,7 @@
 
         webSocket.addEventListener('message', (event) => {
             console.log('Message from server ', event.data);
+            messages.innerHTML += `<li>${event.data}</li>`;
         });
 
         webSocket.addEventListener('close', (event) => {
@@ -56,3 +59,6 @@
 <button on:click={subscribeToRealm}>
     Subscribe to Realm
 </button>
+
+<h2>Messages:</h2>
+<ul id="messages"></ul>

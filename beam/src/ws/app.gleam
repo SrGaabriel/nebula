@@ -1,3 +1,4 @@
+import gleam/erlang/process
 import mist
 import ws/manager
 import glats
@@ -7,9 +8,14 @@ import gleam/dict
 pub type NebulaState {
   NebulaState(
     socket: mist.WebsocketConnection,
+    socket_pid: process.Subject(WsActorMessage),
     cableway: glats.Connection,
     user_id: option.Option(Int),
     subscriptions: List(manager.SubscriptionHandle),
     realm_perms: dict.Dict(String, Int),
   )
+}
+
+pub type WsActorMessage {
+  SendEvent(String)
 }

@@ -29,7 +29,7 @@ pub struct TestContext {
 impl TestContext {
     pub async fn new() -> Self {
         init_test_env();
-        let client = TestClient::new().await;
+        let client = TestClient::login().await;
         Self { client }
     }
 
