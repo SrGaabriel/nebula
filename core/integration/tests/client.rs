@@ -15,7 +15,7 @@ use serde::Serialize;
 pub struct TestClient {
     client: ClientWithMiddleware,
     base_url: String,
-    token: String,
+    pub token: String,
 }
 
 impl TestClient {

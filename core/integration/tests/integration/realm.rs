@@ -2,6 +2,8 @@ use crate::{test_with_context, test_with_realm};
 
 test_with_context!(test_realm_creation, |ctx| {
     let realm = ctx.create_test_realm().await;
+    println!( "Context token: {}", ctx.client.token);
+    println!("Created realm: {:?}", realm);
 
     assert_eq!(realm.name, "Test Realm");
     assert_eq!(realm.description, Some("Test realm description".to_string()));

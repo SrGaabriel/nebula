@@ -1,14 +1,21 @@
+use std::collections::HashMap;
+use sea_orm::QueryFilter;
+use sea_orm::ColumnTrait;
+use sea_orm::EntityTrait;
 use async_nats::Client;
 use async_std::prelude::StreamExt;
 use sea_orm::DatabaseConnection;
 use crate::app::AppConfig;
 use crate::data::snowflake::Snowflake;
+use crate::schema::realm_members;
 
 #[derive(serde::Serialize, Debug)]
 pub struct AuthResponse {
     pub success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user_id: Option<Snowflake>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub realm_perms: Option<HashMap<Snowflake, i16>>
 }
 
 pub async fn open_authentication_channel(config: &AppConfig, client: &Client, db: &DatabaseConnection) {
@@ -26,14 +33,25 @@ pub async fn open_authentication_channel(config: &AppConfig, client: &Client, db
                     .unwrap_or_else(|_| "".to_string());
                 let auth_result = crate::service::auth::authenticate(&config, &db, token).await;
                 let response = if auth_result.is_ok() {
+                    let realm_perms = realm_members::Entity::find()
+                        .filter(realm_members::Column::UserId.eq(auth_result.as_ref().unwrap().id))
+                        .all(&db)
+                        .await
+                        .expect("Failed to query realm memberships")
+                        .into_iter()
+                        .map(|m| (m.realm_id, m.permissions))
+                        .collect::<HashMap<Snowflake, i16>>();
+
                     AuthResponse {
                         success: true,
                         user_id: Some(auth_result.unwrap().id),
+                        realm_perms: Some(realm_perms),
                     }
                 } else {
                     AuthResponse {
                         success: false,
                         user_id: None,
+                        realm_perms: None,
                     }
                 };
                 let bytes = serde_json::to_vec(&response)

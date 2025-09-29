@@ -13,11 +13,12 @@ static INIT: Once = Once::new();
 fn init_test_env() {
     INIT.call_once(|| {
         dotenvy::dotenv().ok();
-        let subscriber = FmtSubscriber::builder()
-            .with_max_level(Level::TRACE)
-            .finish();
-        let _result = tracing::subscriber::set_global_default(subscriber);
-        std::thread::sleep(std::time::Duration::from_millis(500));
+        if std::env::var("LOGGING").is_ok_and(|v| v == "true") {
+            let subscriber = FmtSubscriber::builder()
+                .with_max_level(Level::TRACE)
+                .finish();
+            let _result = tracing::subscriber::set_global_default(subscriber);
+        }
     });
 }
 
