@@ -131,7 +131,8 @@ fn enhanced_listen_loop(
       }
     }
     None -> {
-      let glats.ReceivedMessage(_conn, _sid, _subject, message) = process.receive_forever(subject)
+      let glats.ReceivedMessage(_conn, _sid, _subject, message) =
+        process.receive_forever(subject)
       handle_message(subject, config, message)
     }
   }

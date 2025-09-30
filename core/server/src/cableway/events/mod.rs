@@ -1,11 +1,13 @@
 use async_nats::Client;
 use async_nats::subject::ToSubject;
 use serde::Serialize;
+use crate::cableway::send_message;
 
 pub mod calendar;
 
 #[derive(Serialize)]
 struct EventEnvelope<T : Serialize> {
+    #[serde(rename = "type")]
     pub event: String,
     pub data: T,
 }
@@ -20,8 +22,5 @@ pub async fn send_event<T : Serialize>(
         event: event.to_string(),
         data
     };
-    let payload = serde_json::to_vec(&obj).expect("Failed to serialize message");
-    cableway.publish(subject, payload.into()).await?;
-    cableway.flush().await?;
-    Ok(())
+    send_message(cableway, subject, obj).await
 }

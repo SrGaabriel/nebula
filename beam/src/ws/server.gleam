@@ -1,4 +1,3 @@
-import ws/realm
 import glats
 import gleam/bytes_tree
 import gleam/dict
@@ -10,7 +9,7 @@ import gleam/int
 import gleam/io
 import gleam/json
 import gleam/list
-import gleam/option
+import gleam/option.{type Option, Some, None}
 import gleam/string
 import logging
 import mist.{
@@ -20,6 +19,7 @@ import mist.{
 import ws/app.{type NebulaState, NebulaState}
 import ws/auth
 import ws/manager
+import ws/realm
 
 pub fn start(cableway: glats.Connection) -> Nil {
   let not_found =
@@ -57,7 +57,7 @@ pub fn start(cableway: glats.Connection) -> Nil {
 pub fn on_init(
   cableway: glats.Connection,
   ws_conn: WebsocketConnection,
-) -> #(NebulaState, option.Option(process.Selector(app.WsActorMessage))) {
+) -> #(NebulaState, Option(process.Selector(app.WsActorMessage))) {
   logging.log(logging.Info, "WebSocket connected!" <> string.inspect(ws_conn))
 
   let self_subject = process.new_subject()
@@ -65,16 +65,21 @@ pub fn on_init(
   let selector =
     process.new_selector()
     |> process.select(self_subject)
+  
+  process.spawn(fn () {
+    process.sleep(5000)
+    process.send(self_subject, app.AuthDeadline)
+  })
 
   #(
-    NebulaState(ws_conn, self_subject, cableway, option.None, [], dict.new()),
-    option.Some(selector),
+    NebulaState(ws_conn, self_subject, cableway, None, [], dict.new()),
+    Some(selector),
   )
 }
 
 pub fn on_close(state: NebulaState) -> Nil {
-  list.each(state.subscriptions, fn(handle) {
-    manager.close_subscription(handle)
+  list.each(state.subscriptions, fn(sub) {
+    manager.close_subscription(sub.handle)
   })
   logging.log(logging.Info, "WebSocket closed: " <> string.inspect(state))
 }
@@ -90,7 +95,7 @@ pub fn on_message(
       // todo: use binary instead (compression)
       let decoded = decode_message(text)
       case state.user_id {
-        option.Some(_user_id) ->
+        Some(_user_id) ->
           case decoded {
             Ok(Heartbeat) -> {
               mist.continue(state)
@@ -107,7 +112,7 @@ pub fn on_message(
                   state.cableway,
                   state.user_id,
                   all_subscriptions,
-                  state.realm_perms,
+                  state.allowed_topics,
                 )
               mist.continue(new_state)
             }
@@ -126,11 +131,11 @@ pub fn on_message(
               mist.continue(state)
             }
           }
-        option.None ->
+        None ->
           case decoded {
             Ok(AuthRequest(token)) -> {
               case auth.authenticate_user(state.cableway, token) {
-                option.Some(auth.AuthResponse(_, user_id, realm_perms)) -> {
+                Some(auth.AuthSuccess(user_id, realm_perms)) -> {
                   logging.log(
                     logging.Info,
                     "User authenticated: " <> int.to_string(user_id),
@@ -140,13 +145,13 @@ pub fn on_message(
                       conn,
                       state.socket_pid,
                       state.cableway,
-                      option.Some(user_id),
+                      Some(user_id),
                       [],
                       realm_perms,
                     )
                   mist.continue(new_state)
                 }
-                option.None -> {
+                _ -> {
                   logging.log(
                     logging.Warning,
                     "Authentication failed for token: " <> token,
@@ -172,8 +177,14 @@ pub fn on_message(
       mist.stop()
     }
     mist.Custom(app.SendEvent(text)) -> {
-        let _ = mist.send_text_frame(conn, text)
-        mist.continue(state)
+      let _ = mist.send_text_frame(conn, text)
+      mist.continue(state)
+    }
+    mist.Custom(app.AuthDeadline) -> {
+      case state.user_id {
+        Some(_uid) -> mist.continue(state)
+        None -> mist.stop()
+      }
     }
     _ -> {
       io.println("Ignoring non-text WS message: " <> string.inspect(message))

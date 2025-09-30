@@ -6,7 +6,7 @@
     let messages: HTMLUListElement;
 
     function connectToWebSocket() {
-        webSocket = new WebSocket('ws://localhost:3030/ws?token=' + token);
+        webSocket = new WebSocket('ws://localhost:3030/ws');
         messages = document.getElementById('messages') as HTMLUListElement;
 
         webSocket.addEventListener('open', (event) => {

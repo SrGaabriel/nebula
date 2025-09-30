@@ -83,7 +83,7 @@ pub trait BitwisePermissions: Sized {
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RealmPermissions(i16);
+pub struct RealmPermissions(pub i16);
 
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

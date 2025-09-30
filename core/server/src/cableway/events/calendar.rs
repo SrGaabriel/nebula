@@ -14,7 +14,7 @@ pub async fn send_event_created(
     event: RealmEventDto
 ) -> Result<(), async_nats::Error> {
     let message = CalendarEventCreated { event };
-    send_event(cableway, "event_created", format!("realm.{}.calendar_event_created", message.event.realm_id), message).await
+    send_event(cableway, "event_created", format!("realm.{}.calendar.event_created", message.event.realm_id), message).await
 }
 
 #[derive(Serialize, Deserialize)]
@@ -27,5 +27,5 @@ pub async fn send_event_deleted(
     event_id: Snowflake
 ) -> Result<(), async_nats::Error> {
     let message = CalendarEventDeleted { event_id };
-    send_event(cableway, "event_deleted", format!("realm.{}.calendar_event_deleted", message.event_id), message).await
+    send_event(cableway, "event_deleted", format!("realm.{}.calendar.event_deleted", message.event_id), message).await
 }

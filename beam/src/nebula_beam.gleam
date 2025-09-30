@@ -32,7 +32,11 @@ pub fn main() {
   let assert Ok(_actor) =
     handler.handle_request(conn.data, [], "internal.ping", [], ping_handler)
 
-  subscription_manager.quick_subscribe(conn.data, "internal.status", handle_status_message)
+  subscription_manager.quick_subscribe(
+    conn.data,
+    "internal.status",
+    handle_status_message,
+  )
 
   ws.start(conn.data)
   Ok(Nil)
