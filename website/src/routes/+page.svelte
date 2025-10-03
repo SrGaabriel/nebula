@@ -20,11 +20,6 @@
                     Log In
                 </button>
             </a>
-            <a href="/signup">
-                <button class="sign-up-button">
-                    Sign Up
-                </button>
-            </a>
         </div>
     </div>
 </div>
@@ -95,16 +90,10 @@
         text-decoration: none;
         color: inherit;
     }
-    .sign-up-button {
+    .login-button {
         border: none;
         background-image: linear-gradient(to right, var(--primary), var(--secondary));
         color: white;
-        transition: box-shadow 0.4s ease-in-out;
-    }
-    .login-button {
-        border: 1px solid var(--primary);
-        background-color: transparent;
-        color: var(--primary);
         transition: box-shadow 0.4s ease-in-out;
     }
     .login-button:hover {
