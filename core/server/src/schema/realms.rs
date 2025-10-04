@@ -22,11 +22,25 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     Owner,
+    #[sea_orm(
+        has_many = "super::realm_members::Entity",
+        from = "Column::Id",
+        to = "super::realm_members::Column::RealmId",
+        on_update = "NoAction",
+        on_delete = "Cascade"
+    )]
+    RealmMembers,
 }
 
 impl Related<super::users::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Owner.def()
+    }
+}
+
+impl Related<super::realm_members::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::RealmMembers.def()
     }
 }
 

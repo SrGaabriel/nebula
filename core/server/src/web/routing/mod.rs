@@ -5,6 +5,7 @@ use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use crate::realm_membership;
+use crate::web::routing::users::status::get_self_status;
 
 pub mod auth;
 pub mod middlewares;
@@ -16,6 +17,7 @@ pub mod realms;
 pub fn router(app: NebulaApp) -> Router {
     Router::new()
         .route("/api/users/{user}", get(users::get_user))
+        .route("/api/users/@me/status", get(get_self_status))
         .route("/api/realms/{realm_id}",
                get(realms::get_realm)
                    .layer(realm_membership!(app))

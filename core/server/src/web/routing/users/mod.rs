@@ -1,4 +1,5 @@
-use axum::Extension;
+pub mod status;
+
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use sea_orm::EntityTrait;
@@ -15,13 +16,8 @@ pub struct UserObject {
 
 pub async fn get_user(
     State(app): State<NebulaApp>,
-    Extension(user_model): Extension<users::Model>,
     Path(user): Path<String>,
 ) -> NebulaResponse<UserObject> {
-    if user == "@me" {
-        let dto = UserDto::from_model(&user_model);
-        return ok(UserObject { user: dto })
-    }
     let user_id = user.parse::<u64>();
     if user_id.is_err() {
         return error(StatusCode::BAD_REQUEST, "Invalid user ID");

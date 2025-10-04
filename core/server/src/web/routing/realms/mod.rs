@@ -2,14 +2,13 @@ pub mod create;
 pub mod calendar;
 pub mod task;
 
-use axum::Extension;
-use axum::extract::{Path, State};
-use serde::{Deserialize, Serialize};
 use crate::app::NebulaApp;
-use crate::data::snowflake::Snowflake;
-use crate::schema::{realm_members, realms, users};
+use crate::schema::realms;
 use crate::web::routing::dto::RealmDto;
 use crate::web::routing::error::{ok, NebulaResponse};
+use axum::extract::State;
+use axum::Extension;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct RealmObject {
@@ -18,10 +17,7 @@ pub struct RealmObject {
 
 pub async fn get_realm(
     State(_app): State<NebulaApp>,
-    Extension(_user): Extension<users::Model>,
     Extension(realm): Extension<realms::Model>,
-    Extension(_realm_membership): Extension<realm_members::Model>,
-    Path(_realm_id): Path<Snowflake>
 ) -> NebulaResponse<RealmObject> {
     let dto = RealmDto::from_model(&realm);
     ok(RealmObject { realm: dto })

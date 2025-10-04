@@ -1,14 +1,13 @@
 <script lang="ts">
     import {onMount} from "svelte";
-    import type {RealmDto, UserDto} from "$lib/api/api";
+    import type {RealmDto} from "$lib/api/api";
     import Modal from "$lib/components/Modal.svelte";
 		import ModalInput from '$lib/components/ModalInput.svelte';
 		import { createRealm, type RealmCreationForm } from '$lib/api/realm';
-		import { replaceState } from '$app/navigation';
+		import Tooltip from '$lib/components/Tooltip.svelte';
 
     export let data;
-    let { token, status, activeRealm } = data;
-    let user: UserDto = status.self;
+    let { token, status } = data;
     let realms: RealmDto[] = status.realms;
 
     // modal conditions:
@@ -21,12 +20,6 @@
     function handleCreateRealm() {
         showCreateRealmModal = true;
     }
-
-		function selectRealm(realm: RealmDto) {
-			activeRealm = realm;
-			// eslint-disable-next-line svelte/no-navigation-without-resolve
-			replaceState(`/app/realms/${realm.id}`, {});
-		}
 
 		async function submitRealmCreation(data: RealmCreationForm) {
 			let realmRes = await createRealm(token, data);
@@ -44,15 +37,51 @@
 <div class="app-container">
     <div class="usable-space">
         <div class="sidebar">
+						<div class="misc-buttons">
+							<Tooltip text="Overview">
+								<a href="/app/overview" style="text-decoration: none;" aria-label="Overview">
+									<button class="overview-button" aria-label="Overview">
+										<i class="fa-solid fa-gauge"></i>
+									</button>
+								</a>
+							</Tooltip>
+							<Tooltip text="Notifications">
+								<a href="/app/notifications" style="text-decoration: none;" aria-label="Overview">
+									<button class="overview-button" aria-label="Overview">
+										<i class="fa-solid fa-bell"></i>
+									</button>
+								</a>
+							</Tooltip>
+							<Tooltip text="Search">
+								<a href="/app/search" style="text-decoration: none;" aria-label="Overview">
+									<button class="overview-button" aria-label="Overview">
+										<i class="fa-solid fa-magnifying-glass"></i>
+									</button>
+								</a>
+							</Tooltip>
+							<Tooltip text="Settings">
+								<a href="/app/search" style="text-decoration: none;" aria-label="Settings">
+									<button class="overview-button" aria-label="Settings">
+										<i class="fa-solid fa-user-gear"></i>
+									</button>
+								</a>
+							</Tooltip>
+						</div>
             <div class="realms">
                 {#each realms as realm (realm.id)}
-                    <button class="realm-icon" title={realm.name} onclick={() => selectRealm(realm)}>
-                        {realm.name.charAt(0).toUpperCase()}
-                    </button>
+									<Tooltip text={realm.name}>
+										<a href="/app/realm/{realm.id}" style="text-decoration: none;">
+											<button class="realm-icon">
+													{realm.name.charAt(0)}
+											</button>
+										</a>
+									</Tooltip>
                 {/each}
-                <button class="create-realm" onclick={handleCreateRealm}>
-                    +
-                </button>
+							  <Tooltip text="Create new realm">
+									<button class="create-realm" onclick={handleCreateRealm}>
+											+
+									</button>
+								</Tooltip>
                 <Modal
 									title="Create new realm"
 									bind:condition={showCreateRealmModal}
@@ -74,7 +103,7 @@
             </div>
         </div>
 			<div class="page-content">
-				<p>Realm: {activeRealm?.name}</p>
+				<slot />
 			</div>
     </div>
 </div>
@@ -102,17 +131,42 @@
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        width: 64px;
+        width: 52px;
         height: 100%;
         border-right: 1px solid rgba(0, 0, 0, 0.1);
+    }
+		.misc-buttons {
+				display: flex;
+				flex-direction: column;
+        margin-top: 8px;
+				gap: 4px;
+		}
+		.misc-buttons button {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+				color: #8c8888;
+				border-radius: 50%;
+				aspect-ratio: 1/1;
+				width: 40px;
+				font-size: 16px;
+				border: none;
+				background-color: transparent;
+				transition: all 0.25s ease-in-out;
+		}
+		.misc-buttons button:hover {
+        background-color: #e8e8e8;
     }
     .realms {
         display: flex;
         flex-direction: column;
         align-items: center;
-        margin-top: 16px;
-				gap: 12px;
-        width: 100%;
+        margin-top: 8px;
+				border-top: 1px solid rgba(0, 0, 0, 0.1);
+				padding-top: 16px;
+        width: 85%;
+				gap: 16px;
     }
     .create-realm {
         cursor: pointer;
@@ -131,11 +185,10 @@
         transform: scale(1.1);
     }
 		.realm-icon {
-        margin: 8px;
-				width: 48px;
-				height: 48px;
+				width: 38px;
+				height: 38px;
 				background-color: var(--primary);
-				border-radius: 8px;
+				border-radius: 4px;
 				display: flex;
 				align-items: center;
 				justify-content: center;
@@ -144,11 +197,18 @@
 				border: none;
 				cursor: pointer;
 				transition: all 0.2s ease-in-out;
+				text-transform: uppercase;
+				font-size: 18px;
+				box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+				text-decoration: none;
 		}
 		.realm-icon:hover {
 				transform: scale(1.02);
 				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 				background-color: var(--accent);
 				border-radius: 50%;
+		}
+		.page-content {
+				flex-grow: 1;
 		}
 </style>

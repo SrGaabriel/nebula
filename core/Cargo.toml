@@ -36,7 +36,7 @@ sea-orm = { version = "=2.0.0-rc.8", features = [
     "sqlite-use-returning-for-3_35"
 ]  }
 sea-query = "1.0.0-rc.12"
-sea-orm-migration = "=2.0.0-rc.8"
+sea-orm-migration = { version = "2.0.0-rc.8", features = ["sqlx-postgres", "sqlx-sqlite", "runtime-tokio-rustls"] }
 
 async-nats = "0.43.0"
 bytes = "1.10.1"

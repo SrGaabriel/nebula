@@ -18,3 +18,8 @@ export async function createRealm(token: string, form: RealmCreationForm): Promi
 		}
 	}).then(res => res.map(obj => obj.realm));
 }
+
+export async function fetchRealm(token: string, realmId: string): Promise<ApiResult<RealmDto>> {
+	return apiRequest<RealmObject>(`/realms/${realmId}`, token).
+		then(res => res.map(obj => obj.realm));
+}

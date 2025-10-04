@@ -116,3 +116,9 @@ impl TaskDto {
         }
     }
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SelfStatusDto {
+    pub realms: Vec<RealmDto>,
+    pub me: UserDto
+}
