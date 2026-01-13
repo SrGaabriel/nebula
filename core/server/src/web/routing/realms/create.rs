@@ -1,15 +1,15 @@
-use crate::util::validation::is_sane;
-use axum::Extension;
-use axum::extract::State;
-use sea_orm::{ActiveModelTrait, EntityTrait, Set, QueryFilter, ColumnTrait};
 use crate::app::NebulaApp;
-use crate::data::permissions::{BitwisePermissions, RealmPermissions};
-use crate::schema::{realm_members, realms, users};
+use crate::schema::{realms, users};
 use crate::service::snowflake::next_snowflake;
+use crate::util::validation::is_sane;
 use crate::web::routing::dto::RealmDto;
 use crate::web::routing::error::{error, ok, NebulaResponse};
 use crate::web::routing::middlewares::validation::ValidJson;
 use crate::web::routing::realms::RealmObject;
+use axum::extract::State;
+use axum::Extension;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, Set};
+use crate::service;
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, garde::Validate)]
 pub struct CreateRealmPayload {
@@ -48,22 +48,9 @@ pub async fn create_realm(
         description: Set(payload.description.clone())
     };
 
-    let inserted_realm = new_realm.insert(db)
+    let inserted_realm = service::realm::create_realm(db, user.id, new_realm)
         .await
-        .expect("Failed to insert new realm");
-
-    let membership_snowflake = next_snowflake();
-    let permissions = RealmPermissions::all();
-    let new_membership = realm_members::ActiveModel {
-        id: Set(membership_snowflake),
-        realm_id: Set(inserted_realm.id),
-        user_id: Set(user.id),
-        permissions: Set(permissions.bits())
-    };
-
-    new_membership.insert(db)
-        .await
-        .expect("Failed to insert realm membership");
+        .expect("Failed to create a new realm");
 
     let dto = RealmDto::from_model(&inserted_realm);
     ok(RealmObject { realm: dto })

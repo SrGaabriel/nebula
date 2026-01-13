@@ -1,12 +1,11 @@
 use nebula_server::web::routing::auth::signup::SignupRequest;
 use nebula_server::web::routing::auth::AuthResponse;
-use nebula_server::web::routing::dto::{RealmDto, RealmEventDto, TaskDto, UserDto};
+use nebula_server::web::routing::dto::{RealmDto, RealmEventDto, SelfStatusDto, TaskDto};
 use nebula_server::web::routing::realms::calendar::events::CreateEventRequest;
 use nebula_server::web::routing::realms::calendar::RealmEventObject;
 use nebula_server::web::routing::realms::create::CreateRealmPayload;
 use nebula_server::web::routing::realms::task::{CreateTaskRequest, TaskObject};
 use nebula_server::web::routing::realms::RealmObject;
-use nebula_server::web::routing::users::UserObject;
 use reqwest::{Client, Method, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, RequestBuilder};
 use serde::de::DeserializeOwned;
@@ -57,9 +56,9 @@ impl TestClient {
         realm_obj.realm
     }
 
-    pub async fn get_current_user(&self) -> UserDto {
-        let user_obj: UserObject = self.get("api/users/@me").await;
-        user_obj.user
+    pub async fn get_current_status(&self) -> SelfStatusDto {
+        let status_obj: SelfStatusDto = self.get("api/users/@me/status").await;
+        status_obj
     }
 
     pub async fn get_realm(&self, realm_id: u64) -> RealmObject {
@@ -73,7 +72,7 @@ impl TestClient {
         event_obj.event
     }
 
-    pub async fn get_realm_schedule<P: Serialize>(&self, realm_id: u64, query: &P) -> nebula_server::web::routing::dto::RealmEventOccurrenceList {
+    pub async fn get_realm_schedule<P: Serialize>(&self, realm_id: u64, query: &P) -> nebula_server::web::routing::dto::RealmScheduleDto {
         self.get_with_query(&format!("api/realms/{}/calendar/schedule", realm_id), query).await
     }
 
@@ -137,7 +136,7 @@ async fn login(client: &ClientWithMiddleware, base_url: &str) -> String {
         .json(&signup_data)
         .send()
         .await
-        .expect("Failed to signup");
+        .expect("Failed to send signup request");
 
     let auth_response: AuthResponse = response.json().await.expect("Failed to parse auth response");
     auth_response.token

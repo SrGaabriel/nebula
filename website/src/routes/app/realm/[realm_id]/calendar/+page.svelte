@@ -24,8 +24,13 @@
 				{/each}
 				{#each Array(35) as _, index (index)}
 					{@const daysInMonth = getDaysInMonth()}
-					<div class="calendar-date" data-next-month={index >= daysInMonth}>
-						<span class="calendar-date-number">
+					{@const isToday = viewingMonth=== today.getMonth() && index === today.getDate() - 1 && viewingYear === today.getFullYear() ? "true" : "false"}
+					<div
+						class="calendar-date"
+						data-next-month={index >= daysInMonth}
+						data-today={isToday}
+					>
+						<span class="calendar-date-number" data-today={isToday}>
 							{index % daysInMonth + 1}
 						</span>
 					</div>
@@ -79,21 +84,23 @@
 			align-items: center;
 			justify-content: center;
 			font-weight: 600;
-			border-bottom: 1px solid #ececec;
 	}
 	.calendar-day-name:first-child {
-			border-top-left-radius: 16px;
+			border-top-left-radius: inherit;
 	}
 	.calendar-day-name:nth-child(7) {
-      border-top-right-radius: 16px;
+      border-top-right-radius: inherit;
   }
 	.calendar-date {
 			display: flex;
 			flex-direction: column;
 			width: 100%;
 			height: 100%;
-			border-bottom: 1px solid #ececec;
+			border-top: 1px solid #ececec;
 			border-right: 1px solid #ececec;
+	}
+	.calendar-date:last-child {
+			border-bottom-right-radius: inherit;
 	}
 	.calendar-date[data-next-month="true"] {
 			background-color: #d5d5d5 !important;
@@ -107,5 +114,16 @@
 			font-size: 10px;
 			font-weight: 600;
 			color: #616161;
+			aspect-ratio: 1/1;
+			width: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+	}
+	.calendar-date-number[data-today="true"] {
+			background-color: var(--primary);
+			color: white;
+			padding: 2px;
+			border-radius: 50%;
 	}
 </style>

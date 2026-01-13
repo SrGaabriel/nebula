@@ -7,6 +7,7 @@ pub mod auth;
 pub mod realm;
 pub mod event;
 pub mod task;
+pub mod schedule;
 
 static INIT: Once = Once::new();
 

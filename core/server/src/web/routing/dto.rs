@@ -74,8 +74,9 @@ pub struct RealmEventOccurrenceDto {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct RealmEventOccurrenceList {
+pub struct RealmScheduleDto {
     pub events: Vec<RealmEventDto>,
+    pub tasks: Vec<TaskDto>,
     pub occurrences: Vec<RealmEventOccurrenceDto>
 }
 
